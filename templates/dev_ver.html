@@ -30,15 +30,15 @@
 }
 
 [data-theme="light"] {
-  /* Minimalistic Light Theme - Clean & Elegant */
-  --bg:#FAFAFA;
-  --panel:#FFFFFF;
-  --mepanel:#FFFFFF;
-  --card:#FFFFFF;
-  --accent-text:#1A1A1A;
-  --text-muted:#737373;
-  --border:#E0E0E0;
-  --shadow:rgba(0,0,0,0.04);
+  /* Medium-Light Theme - Soft & Elegant */
+  --bg:#ECECEC;
+  --panel:#F5F5F5;
+  --mepanel:#F5F5F5;
+  --card:#F8F8F8;
+  --accent-text:#2A2A2A;
+  --text-muted:#666666;
+  --border:rgba(0,0,0,0.06);
+  --shadow:rgba(0,0,0,0.03);
   --accent:#10A37F;
   --accent2:#0D8A6A;
 }
@@ -65,7 +65,7 @@ body{
 .right{flex:1;padding:0px;display:flex;flex-direction:column;overflow:hidden}
 h1{color:var(--etl);margin:0}
 .section-title{color:#cfeff7;margin-top:18px;margin-bottom:8px;font-weight:700}
-.job-card{background:var(--card);border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #222;transition:transform .18s,box-shadow .18s}
+.job-card{background:var(--card);border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid var(--border);transition:transform .18s,box-shadow .18s}
 .job-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.6)}
 .meta{font-size:0.9rem;color:var(--muted);margin-top:6px}
 .actions{margin-top:10px;display:flex;gap:8px}
@@ -73,10 +73,10 @@ h1{color:var(--etl);margin:0}
 .btn:hover{opacity:.85}
 .btn-approve{background:var(--etl);color:#000;font-weight:700}
 .btn-reject{background:#333;color:#fff}
-.running-card{background:linear-gradient(180deg,#0f0f0f,#151515);border-radius:12px;padding:12px;border:1px solid #222;margin-bottom:16px}
+.running-card{background:linear-gradient(180deg,#0f0f0f,#151515);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:16px}
 .progress-track{height:12px;background:#232323;border-radius:8px;overflow:hidden;margin-top:10px}
 .progress-fill{height:12px;background:linear-gradient(90deg,var(--etl),var(--success));width:0%;border-radius:6px;transition:width 0.8s ease-in-out;box-shadow:0 0 8px rgba(0,255,200,0.12)}
-.log-area{background:#0c0c0c;border-radius:8px;padding:10px;height:160px;overflow:auto;border:1px solid #222;margin-top:10px;font-size:0.85rem;white-space:pre-wrap; color: #00ff66;}
+.log-area{background:#0c0c0c;border-radius:8px;padding:10px;height:160px;overflow:auto;border:1px solid var(--border);margin-top:10px;font-size:0.85rem;white-space:pre-wrap; color: #00ff66;}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;font-weight:700;font-size:0.75rem;white-space:nowrap}
 .badge-pending{background:var(--warn);color:#000}
 .badge-queued{background:#444;color:#fff}
@@ -94,13 +94,13 @@ h1{color:var(--etl);margin:0}
   padding-right: 12px;  /* You can tweak this number (20–32px looks best) */
 }
 
-.completed-card{background:var(--card);border-radius:12px;padding:10px;border:1px solid #222;transition:all .18s ease-in-out;display:flex;flex-direction:column;justify-content:flex-start}
+.completed-card{background:var(--card);border-radius:12px;padding:10px;border:1px solid var(--border);transition:all .18s ease-in-out;display:flex;flex-direction:column;justify-content:flex-start}
 .completed-card:hover{transform:translateY(-3px);box-shadow:0 0 12px rgba(0,224,255,0.08)}
 .filter-row{display:flex;gap:10px;align-items:center;margin-top:8px}
 .modal{position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999}
-.modal .body{background:#0f0f0f;padding:18px;border-radius:12px;border:1px solid #222;width:720px;max-width:96%}
+.modal .body{background:#0f0f0f;padding:18px;border-radius:12px;border:1px solid var(--border);width:720px;max-width:96%}
 .close-x{float:right;background:transparent;border:none;color:#999;font-size:1.1rem;cursor:pointer}
-textarea{width:100%;height:120px;background:#0b0b0b;color:var(--accent-text);border:1px solid #222;padding:8px;border-radius:8px}
+textarea{width:100%;height:120px;background:#0b0b0b;color:var(--accent-text);border:1px solid var(--border);padding:8px;border-radius:8px}
 .small{font-size:0.9rem;color:var(--muted)}
 .header-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .top-controls{display:flex;gap:8px;align-items:center}
@@ -250,26 +250,26 @@ textarea{width:100%;height:120px;background:#0b0b0b;color:var(--accent-text);bor
   box-shadow:0 4px 12px var(--shadow);
 }
 .raise-btn{background:linear-gradient(90deg,var(--etl),#2ad7ff);color:#000;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
-.left-panel-mini{margin-top:12px;border-radius:10px;padding:10px;background:linear-gradient(180deg,#111,#0e0e0e);border:1px solid #222}
+.left-panel-mini{margin-top:12px;border-radius:10px;padding:10px;background:linear-gradient(180deg,#111,#0e0e0e);border:1px solid var(--border)}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
 .tab-button{padding:8px 10px;border-radius:8px;border:none;background:#121212;color:var(--muted);cursor:pointer}
 .tab-button.active{background:var(--etl);color:#000}
 .checkbox-list{background:#141414;border-radius:8px;padding:8px;max-height:240px;overflow:auto}
 .checkbox-item{display:inline-block;margin:4px}
 .checkbox-item input[type="checkbox"]{display:none}
-.checkbox-item label{display:inline-block;padding:6px 10px;border-radius:20px;background:transparent;color:#ccc;border:1px solid #2a2a2a;cursor:pointer}
+.checkbox-item label{display:inline-block;padding:6px 10px;border-radius:20px;background:transparent;color:#ccc;border:1px solid var(--border);cursor:pointer}
 .checkbox-item input[type="checkbox"]:checked + label{background:var(--etl);color:#000;border-color:var(--etl)}
 .submit-btn{width:100%;background:linear-gradient(90deg,var(--etl),#00c4ff);color:#000;padding:10px;font-weight:bold;border:none;border-radius:8px;cursor:pointer;margin-top:10px}
-.right-top-sticky{position:sticky;top:0;background:var(--mepanel);z-index:1100;padding:11px;border-bottom:1px solid #202020;box-shadow: 0 2px 8px rgba(0,0,0,0.6);    border-radius: 19px;     /* rounded corners */
+.right-top-sticky{position:sticky;top:0;background:var(--mepanel);z-index:1100;padding:11px;border-bottom:1px solid var(--border);box-shadow: 0 2px 8px var(--shadow);    border-radius: 19px;     /* rounded corners */
     margin: .5px; }
 .jobs-scroll{overflow:auto;padding:12px;height:calc(100vh - 170px)}
 
 .job-column{flex:1;background:transparent;padding:6px;min-width:0}
 .section-header{font-weight:700;padding:8px 6px;position:sticky;top:46px;background:transparent;z-index:4}
-.request-card{background:#141414;border:1px solid #222;border-radius:8px;padding:10px;margin-bottom:10px}
+.request-card{background:#141414;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px}
 .status-badge{display:inline-block;background:#ffb400;color:#000;padding:3px 8px;border-radius:12px;font-size:.8em;margin-left:6px}
 .small-muted{font-size:.9rem;color:var(--muted)}
-.user-pill{background:#1b1b1b;padding:4px 8px;border-radius:8px;border:1px solid #222;color:var(--muted);font-size:.85rem}
+.user-pill{background:#1b1b1b;padding:4px 8px;border-radius:8px;border:1px solid var(--border);color:var(--muted);font-size:.85rem}
 /* Sleek themed scrollbars for all panels */
 /* ---- Subtle dark theme scrollbars ---- */
 ::-webkit-scrollbar {
