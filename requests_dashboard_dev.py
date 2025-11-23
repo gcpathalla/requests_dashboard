@@ -127,6 +127,7 @@ def get_jobs():
             "approved_at": r.get("approved_at").strftime("%Y-%m-%d %H:%M:%S") if r.get("approved_at") else None,
             "start": r.get("start_time").strftime("%Y-%m-%d %H:%M:%S") if r.get("start_time") else None,
             "end": r.get("end_time").strftime("%Y-%m-%d %H:%M:%S") if r.get("end_time") else None,
+            "rejected_reason": r.get("rejected_reason") if r.get("status") == "rejected" else None,
         })
     return jsonify(out)
 
@@ -286,17 +287,33 @@ def kill_job(jid):
             if row.get("status") != "running":
                 return jsonify({"ok": False, "msg": "Job is not running"}), 400
 
-            # Mark job as error (killed)
+            # Actually kill the process if it exists
+            if jid in running_processes:
+                try:
+                    proc = running_processes[jid]
+                    proc.terminate()  # Try graceful termination first
+                    try:
+                        proc.wait(timeout=2)  # Wait up to 2 seconds
+                    except subprocess.TimeoutExpired:
+                        proc.kill()  # Force kill if it doesn't terminate
+                    running_processes.pop(jid, None)
+                    enqueue_log_to_db(jid, f"[{datetime.now().strftime('%H:%M:%S')}] Process terminated by {session.get('username')}")
+                except Exception as e:
+                    print(f"Error killing process for job {jid}: {e}")
+
+            # Mark job as killed
             end = datetime.now()
             cur.execute(
                 'UPDATE jobs SET status=%s, end_time=%s WHERE id=%s',
-                ("error", end, jid)
+                ("killed", end, jid)
             )
             cur.execute('INSERT INTO job_logs (job_id, line) VALUES (%s,%s)',
-                       (jid, f"[{end.strftime('%H:%M:%S')}] Job killed by {session.get('username')}"))
+                       (jid, f"[{end.strftime('%H:%M:%S')}] 🛑 Job killed by {session.get('username')}"))
     finally:
         conn.close()
 
+    async_notify_teams(event="job_killed", user=session.get("username"),
+                      type_="", items="", status="killed", time=datetime.now().isoformat())
     return jsonify({"ok": True})
 
 # ------------------------------------------------------------------
@@ -476,6 +493,9 @@ def delete_db_type():
 # Worker: pick queued jobs and run scripts
 # ------------------------------------------------------------------
 
+# Global dict to track running processes by job_id
+running_processes = {}
+
 def enqueue_log_to_db(job_id, text):
     try:
         conn = get_conn()
@@ -502,6 +522,8 @@ def run_script_for_job(job):
     try:
         proc = subprocess.Popen([sys.executable, "-u", script_path] + args,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        # Store process in global dict so we can kill it later
+        running_processes[job_id] = proc
     except Exception as e:
         enqueue_log_to_db(job_id, f"❌ Failed to launch script: {e}")
         return False
@@ -537,6 +559,8 @@ def run_script_for_job(job):
             else:
                 enqueue_log_to_db(job_id, line)
         proc.wait()
+        # Clean up from running_processes dict
+        running_processes.pop(job_id, None)
         return proc.returncode == 0
     except Exception as e:
         enqueue_log_to_db(job_id, f"❌ Exception while running: {e}")
@@ -544,6 +568,7 @@ def run_script_for_job(job):
             proc.kill()
         except Exception:
             pass
+        running_processes.pop(job_id, None)
         return False
 
 def worker_loop():
@@ -628,10 +653,17 @@ def worker_loop():
             # 5. Run the job (ETL/VIEW/TABLE)
             ok = run_script_for_job(job)
 
-            # 6. Update status accordingly
+            # 6. Update status accordingly (only if not killed)
             conn = get_conn()
             try:
                 with conn.cursor() as cur:
+                    # Check if job was killed while running
+                    cur.execute("SELECT status FROM jobs WHERE id=%s", (job['id'],))
+                    current_status = cur.fetchone()
+                    if current_status and current_status.get('status') == 'killed':
+                        # Job was killed, don't update status
+                        continue
+
                     end = datetime.now()
                     if ok:
                         # job succeeded

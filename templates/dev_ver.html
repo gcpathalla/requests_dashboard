@@ -8,24 +8,60 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Requests Dashboard</title>
 <style>
-:root{
-  /* slightly lighter theme adjustments */
+/* ChatGPT-inspired Light & Dark Theme */
+:root {
+  /* Dark Theme (default) */
   --etl:#00e0ff;
   --view:#b97aff;
   --table:#ffb347;
   --success:#7ef3b8;
   --warn:#ffcf66;
   --err:#ff6b6b;
-  --bg:#171717;
+  --bg:#0D0D0D;
   --panel:#171717;
   --mepanel:#171717;
-  --card:#1f1f1f;
-  --muted:#bdbdbd;
-  --accent-text:#e6faff;
+  --card:#2F2F2F;
+  --accent-text:#ECECEC;
+  --text-muted:#C5C5D2;
+  --border:#565869;
+  --shadow:rgba(0,0,0,0.5);
+  --accent:#19C37D;
+  --accent2:#10A37F;
 }
+
+[data-theme="light"] {
+  /* Light Theme */
+  --bg:#FFFFFF;
+  --panel:#F7F7F8;
+  --mepanel:#F7F7F8;
+  --card:#FFFFFF;
+  --accent-text:#0D0D0D;
+  --text-muted:#6E6E80;
+  --border:#E5E5E5;
+  --shadow:rgba(0,0,0,0.08);
+  --accent:#10A37F;
+  --accent2:#19C37D;
+}
+
 *{box-sizing:border-box}
-body{margin:3px;font-family:"Segoe UI",sans-serif;background:var(--bg);color:var(--accent-text);height:99vh;display:flex;overflow:hidden}
-.left{flex:0 0 18%;background:var(--panel);padding:18px;overflow:auto;border-right:1px solid #1e1e1e}
+body{
+  margin:3px;
+  font-family:"Segoe UI",-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--accent-text);
+  height:99vh;
+  display:flex;
+  overflow:hidden;
+  transition:background 0.3s ease, color 0.3s ease;
+}
+.left{
+  flex:0 0 18%;
+  background:var(--panel);
+  padding:18px;
+  overflow:auto;
+  border-right:1px solid var(--border);
+  transition:background 0.3s ease;
+}
 .right{flex:1;padding:0px;display:flex;flex-direction:column;overflow:hidden}
 h1{color:var(--etl);margin:0}
 .section-title{color:#cfeff7;margin-top:18px;margin-bottom:8px;font-weight:700}
@@ -48,6 +84,7 @@ h1{color:var(--etl);margin:0}
 .badge-completed{background:var(--success);color:#000}
 .badge-rejected{background:#ffb7a6;color:#000}
 .badge-error{background:var(--err);color:#000}
+.badge-killed{background:#ff6b6b;color:#fff;border:2px solid #fff}
 .spinner{width:12px;height:12px;border:2px solid rgba(0,0,0,0.1);border-top:2px solid #000;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 .empty{color:#9c9c9c;padding:12px}
@@ -67,7 +104,45 @@ textarea{width:100%;height:120px;background:#0b0b0b;color:var(--accent-text);bor
 .small{font-size:0.9rem;color:var(--muted)}
 .header-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .top-controls{display:flex;gap:8px;align-items:center}
-.filter-select{background:#1a1a1a;color:var(--accent-text);border:1px solid #2a2a2a;padding:6px 8px;border-radius:6px}
+/* Multi-select styling */
+.filter-select{
+  background:var(--card);
+  color:var(--accent-text);
+  border:1px solid var(--border);
+  padding:6px 8px;
+  border-radius:8px;
+  transition:all 0.2s ease;
+  min-width:120px;
+  max-height:120px;
+}
+.filter-select:focus {
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+.filter-select option {
+  padding:6px;
+  border-radius:4px;
+  margin:2px 0;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:6px 12px;
+  cursor:pointer;
+  font-size:1.2rem;
+  transition:all 0.3s ease;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.theme-toggle:hover {
+  transform:scale(1.05);
+  box-shadow:0 4px 12px var(--shadow);
+}
 .raise-btn{background:linear-gradient(90deg,var(--etl),#2ad7ff);color:#000;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
 .left-panel-mini{margin-top:12px;border-radius:10px;padding:10px;background:linear-gradient(180deg,#111,#0e0e0e);border:1px solid #222}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
@@ -413,32 +488,37 @@ window.addEventListener('error', e => {
 
 
 <div class="top-controls">
-    <button id="refreshDashboardBtn" title="Clear filters" style="
-  background: linear-gradient(90deg,#000000,#000000);
-  color: #000;
+<div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+  <span id="themeIcon">☀️</span>
+</div>
+<button id="refreshDashboardBtn" title="Refresh dashboard" style="
+  background: linear-gradient(90deg,var(--accent),var(--accent2));
+  color: #fff;
   font-weight: 600;
   border: none;
   border-radius: 8px;
-  padding: 1px 1px;
+  padding: 6px 12px;
   cursor: pointer;
   transition: all 0.25s ease;
-  margin-left: 8px;
 ">
   ♻️
 </button>
 <label class="small-muted">Status</label>
-<select class="filter-select" id="statusFilter">
-  <option value="all">All</option>
-  <option value="completed">Completed</option>
-  <option value="rejected">Rejected</option>
-  <option value="error">Error</option>
+<select class="filter-select" id="statusFilter" multiple size="4">
+  <option value="completed" selected>Completed</option>
+  <option value="pending" selected>Pending</option>
+  <option value="queued" selected>Queued</option>
+  <option value="running" selected>Running</option>
+  <option value="rejected" selected>Rejected</option>
+  <option value="error" selected>Error</option>
+  <option value="killed" selected>Killed</option>
 </select>
 
 <label class="small-muted">User</label>
-<select class="filter-select" id="userFilter"><option value="all">All Users</option></select>
-<label class="small-muted">Request</label>
-<select class="filter-select" id="typeFilter"><option value="all">All</option></select>
-<label class="small-muted">Completed on</label>
+<select class="filter-select" id="userFilter" multiple size="4"></select>
+<label class="small-muted">Type</label>
+<select class="filter-select" id="typeFilter" multiple size="4"></select>
+<label class="small-muted">Date</label>
 <input id="filterDate" type="date"/>
 
 
@@ -684,8 +764,22 @@ document.getElementById('openAnalyticsBtn').addEventListener('click', () => {
 let jobs={}, logStreams={}, pendingRejectJobId=null;
 // Fix: ensure polling pause variable exists
 let pausePollingUntil = 0;
+let selectedUsers = [], selectedTypes = [], selectedStatuses = ['completed','pending','queued','running','rejected','error','killed'];
+let currentTheme = localStorage.getItem('theme') || 'dark';
 
 const isApprover = {{ 'true' if is_approver else 'false' | lower }};
+
+// Theme Management
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', currentTheme);
+  localStorage.setItem('theme', currentTheme);
+  document.getElementById('themeIcon').textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+}
+
+// Initialize theme
+document.body.setAttribute('data-theme', currentTheme);
+document.getElementById('themeIcon').textContent = currentTheme === 'dark' ? '☀️' : '🌙';
 
 // --- Force-repaint modal helper (to fix success modal not showing) ---
 function showModal(modalId) {
@@ -730,7 +824,14 @@ async function fetchJobs(fullRefresh = true){
     const map = {};
     data.forEach(j => map[j.id] = j);
     jobs = map;
-    // Only populate filters once
+
+    // Initialize multi-select filters if empty
+    if(selectedUsers.length === 0) {
+      selectedUsers = [...new Set(data.map(j=>j.user).filter(Boolean))];
+    }
+    if(selectedTypes.length === 0) {
+      selectedTypes = [...new Set(data.map(j=>j.type).filter(Boolean))];
+    }
 
     populateUserFilter();
     populateTypeFilter();
@@ -759,16 +860,17 @@ if (!actionLock) {
 
 
 // Pending
-// ✅ Updated Pending section with filters applied
 function renderPending(){
   const el=document.getElementById('pendingList');
   let arr=Object.values(jobs).filter(j=>j.status==='pending');
 
-  // 🟢 Apply User & Request Type filters
-  const selUser=document.getElementById('userFilter').value;
-  const selType=document.getElementById('typeFilter').value;
-  if(selUser!=='all')arr=arr.filter(j=>j.user===selUser);
-  if(selType!=='all')arr=arr.filter(j=>j.type===selType);
+  // Apply multi-select filters
+  if(selectedUsers.length > 0) arr = arr.filter(j=>selectedUsers.includes(j.user));
+  if(selectedTypes.length > 0) arr = arr.filter(j=>selectedTypes.includes(j.type));
+  if(selectedStatuses.length > 0 && !selectedStatuses.includes('pending')) {
+    el.innerHTML='<div class="empty">Pending jobs hidden by status filter</div>';
+    return;
+  }
 
   // Sort oldest first
   arr.sort((a,b)=>new Date(a.created_at||a.time||0)-new Date(b.created_at||b.time||0));
@@ -804,13 +906,16 @@ function renderPending(){
 // Queued
 function renderQueued(){
   const el=document.getElementById('queuedContainer');
-  // Apply filters: user & type
-  const selUser=document.getElementById('userFilter').value;
-  const selType=document.getElementById('typeFilter').value;
 
   let arr=Object.values(jobs).filter(j=>j.status==='queued');
-  if(selUser!=='all') arr = arr.filter(j=>j.user===selUser);
-  if(selType!=='all') arr = arr.filter(j=>j.type===selType);
+
+  // Apply multi-select filters
+  if(selectedUsers.length > 0) arr = arr.filter(j=>selectedUsers.includes(j.user));
+  if(selectedTypes.length > 0) arr = arr.filter(j=>selectedTypes.includes(j.type));
+  if(selectedStatuses.length > 0 && !selectedStatuses.includes('queued')) {
+    el.innerHTML='<div class="empty">Queued jobs hidden by status filter</div>';
+    return;
+  }
 
   arr.sort((a,b)=> new Date(a.approved_at||a.created_at||0) - new Date(b.approved_at||b.created_at||0));
   el.innerHTML='';
@@ -836,12 +941,17 @@ document.getElementById('refreshDashboardBtn').addEventListener('click', () => {
 // Running
 function renderRunning(){
   const el=document.getElementById('runningContainer');
-  const selUser=document.getElementById('userFilter').value;
-  const selType=document.getElementById('typeFilter').value;
 
   let arr=Object.values(jobs).filter(j=>j.status==='running');
-  if(selUser!=='all') arr = arr.filter(j=>j.user===selUser);
-  if(selType!=='all') arr = arr.filter(j=>j.type===selType);
+
+  // Apply multi-select filters
+  if(selectedUsers.length > 0) arr = arr.filter(j=>selectedUsers.includes(j.user));
+  if(selectedTypes.length > 0) arr = arr.filter(j=>selectedTypes.includes(j.type));
+  if(selectedStatuses.length > 0 && !selectedStatuses.includes('running')) {
+    el.innerHTML='';
+    lastRunningId = null;
+    return;
+  }
 
   el.innerHTML='';
 if (!arr.length) {
@@ -872,20 +982,17 @@ if (!arr.length) {
   startLogStream(job.id);
 }
 
-// Completed (includes completed, rejected, error respectively)
+// Completed (includes completed, rejected, error, killed)
 function renderCompleted(){
   const el=document.getElementById('completedContainer');
-  const selUser=document.getElementById('userFilter').value;
-  const selType=document.getElementById('typeFilter').value;
   const date=document.getElementById('filterDate').value;
-  const selStatus = document.getElementById('statusFilter').value;
 
+  let arr = Object.values(jobs).filter(j=>['completed','rejected','error','killed'].includes(j.status));
 
-  let arr = Object.values(jobs).filter(j=>['completed','rejected','error'].includes(j.status));
-
-  if(selUser!=='all') arr = arr.filter(j=>j.user===selUser);
-  if(selType!=='all') arr = arr.filter(j=>j.type===selType);
-  if (selStatus !== 'all') arr = arr.filter(j => j.status === selStatus);
+  // Apply multi-select filters
+  if(selectedUsers.length > 0) arr = arr.filter(j=>selectedUsers.includes(j.user));
+  if(selectedTypes.length > 0) arr = arr.filter(j=>selectedTypes.includes(j.type));
+  if(selectedStatuses.length > 0) arr = arr.filter(j => selectedStatuses.includes(j.status));
 
   if(date){
     arr = arr.filter(j=> (j.end||j.created_at||'').substring(0,10) === date );
@@ -903,13 +1010,19 @@ function renderCompleted(){
       badgeText='REJECTED';
       cls='badge-rejected';
       btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>
-           <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+           <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:var(--accent);color:#fff;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
     }
     else if(j.status==='error'){
       badgeText='ERROR';
       cls='badge-error';
       btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>
-           <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+           <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:var(--accent);color:#fff;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+    }
+    else if(j.status==='killed'){
+      badgeText='KILLED';
+      cls='badge-killed';
+      btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Logs</button>
+           <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:var(--accent);color:#fff;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
     }
 
     card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
@@ -940,17 +1053,14 @@ function animateCount(el, to) {
 
 function updateCompletedHeaderCounts() {
   try {
-    const selUser = document.getElementById('userFilter')?.value || 'all';
-    const selType = document.getElementById('typeFilter')?.value || 'all';
     const date = document.getElementById('filterDate')?.value || '';
-    const selStatus = document.getElementById('statusFilter')?.value || 'all';
 
     let arr = Object.values(jobs || {});
 
     // Apply SAME filters as the UI
-    if (selUser !== 'all') arr = arr.filter(j => j.user === selUser);
-    if (selType !== 'all') arr = arr.filter(j => j.type === selType);
-    if (selStatus !== 'all') arr = arr.filter(j => j.status === selStatus);
+    if (selectedUsers.length > 0) arr = arr.filter(j => selectedUsers.includes(j.user));
+    if (selectedTypes.length > 0) arr = arr.filter(j => selectedTypes.includes(j.type));
+    if (selectedStatuses.length > 0) arr = arr.filter(j => selectedStatuses.includes(j.status));
     if (date) arr = arr.filter(j => (j.end||j.created_at||'').substring(0,10) === date);
 
     const pendingCount   = arr.filter(j => j.status === 'pending').length;
@@ -958,8 +1068,9 @@ function updateCompletedHeaderCounts() {
     const completedCount = arr.filter(j => j.status === 'completed').length;
     const rejectedCount  = arr.filter(j => j.status === 'rejected').length;
     const errorCount     = arr.filter(j => j.status === 'error').length;
+    const killedCount    = arr.filter(j => j.status === 'killed').length;
 
-    const totalDone = completedCount + rejectedCount + errorCount;
+    const totalDone = completedCount + rejectedCount + errorCount + killedCount;
 
     // Animate all counters
     animateCount(document.getElementById('countPending'), pendingCount);
@@ -1188,33 +1299,84 @@ if (logStreams[id]) {
 }
 
 /* -------------------------
-   Filters population
+   Filters population with cross-filtering
    ------------------------- */
 function populateUserFilter(){
   const sel = document.getElementById('userFilter');
-  const users = [...new Set(Object.values(jobs).map(j=>j.user).filter(Boolean))].sort();
-  const cur = sel.value;
-  sel.innerHTML = '<option value="all">All Users</option>' + users.map(u=>`<option value="${u}">${u}</option>`).join("");
-  if(users.includes(cur) || cur==="all") sel.value = cur;
+  const allUsers = [...new Set(Object.values(jobs).map(j=>j.user).filter(Boolean))].sort();
+
+  // Find available users based on selected types and statuses
+  const availableUsers = [...new Set(
+    Object.values(jobs)
+      .filter(j => (selectedTypes.length === 0 || selectedTypes.includes(j.type)) &&
+                   (selectedStatuses.length === 0 || selectedStatuses.includes(j.status)))
+      .map(j => j.user)
+  )].sort();
+
+  sel.innerHTML = allUsers.map(u => {
+    const isAvailable = availableUsers.includes(u);
+    const isSelected = selectedUsers.includes(u);
+    return `<option value='${u}' ${isSelected ? 'selected' : ''} ${!isAvailable ? 'disabled' : ''}>${u}${!isAvailable ? ' (no data)' : ''}</option>`;
+  }).join('');
 }
+
 function populateTypeFilter(){
   const sel = document.getElementById('typeFilter');
-  const types = [...new Set(Object.values(jobs).map(j=>j.type).filter(Boolean))].sort();
-  const cur = sel.value;
-  sel.innerHTML = '<option value="all">All</option>' + types.map(t=>`<option value="${t}">${t}</option>`).join("");
-  if(types.includes(cur) || cur==="all") sel.value = cur;
+  const allTypes = [...new Set(Object.values(jobs).map(j=>j.type).filter(Boolean))].sort();
+
+  // Find available types based on selected users and statuses
+  const availableTypes = [...new Set(
+    Object.values(jobs)
+      .filter(j => (selectedUsers.length === 0 || selectedUsers.includes(j.user)) &&
+                   (selectedStatuses.length === 0 || selectedStatuses.includes(j.status)))
+      .map(j => j.type)
+  )].sort();
+
+  sel.innerHTML = allTypes.map(t => {
+    const isAvailable = availableTypes.includes(t);
+    const isSelected = selectedTypes.includes(t);
+    return `<option value='${t}' ${isSelected ? 'selected' : ''} ${!isAvailable ? 'disabled' : ''}>${t}${!isAvailable ? ' (no data)' : ''}</option>`;
+  }).join('');
 }
+
+// Dynamic cross-filter: when users change, update available types
 document.getElementById('userFilter').addEventListener('change', () => {
+    const userList = document.getElementById('userFilter');
+    selectedUsers = Array.from(userList.selectedOptions).map(o => o.value);
+    populateTypeFilter();
     pausePollingUntil = Date.now() + 3500;
-    fetchJobs(false);
+    renderPending();
+    renderQueued();
+    renderRunning();
+    renderCompleted();
+    updateCompletedHeaderCounts();
 });
+
+// Dynamic cross-filter: when types change, update available users
 document.getElementById('typeFilter').addEventListener('change', () => {
+    const typeList = document.getElementById('typeFilter');
+    selectedTypes = Array.from(typeList.selectedOptions).map(o => o.value);
+    populateUserFilter();
     pausePollingUntil = Date.now() + 3500;
-    fetchJobs(false);
+    renderPending();
+    renderQueued();
+    renderRunning();
+    renderCompleted();
+    updateCompletedHeaderCounts();
 });
+
+// Status filter
 document.getElementById('statusFilter').addEventListener('change', () => {
+    const statusList = document.getElementById('statusFilter');
+    selectedStatuses = Array.from(statusList.selectedOptions).map(o => o.value);
+    populateUserFilter();
+    populateTypeFilter();
     pausePollingUntil = Date.now() + 3500;
-    fetchJobs(false);
+    renderPending();
+    renderQueued();
+    renderRunning();
+    renderCompleted();
+    updateCompletedHeaderCounts();
 });
 
 
@@ -1638,13 +1800,19 @@ renderCompleted = function() {
         badgeText='REJECTED';
         cls='badge-rejected';
         btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>
-             <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+             <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:var(--accent);color:#fff;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
       }
       else if (j.status === 'error'){
         badgeText='ERROR';
         cls='badge-error';
         btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>
-             <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+             <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:var(--accent);color:#fff;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+      }
+      else if (j.status === 'killed'){
+        badgeText='KILLED';
+        cls='badge-killed';
+        btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Logs</button>
+             <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:var(--accent);color:#fff;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
       }
 
       card.innerHTML = `
