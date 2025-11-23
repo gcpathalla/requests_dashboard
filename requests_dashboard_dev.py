@@ -334,9 +334,9 @@ def resubmit_job(jid):
             if not original:
                 return jsonify({"ok": False, "msg": "Job not found"}), 404
 
-            # Only allow re-submit for rejected/error jobs
-            if original.get("status") not in ["rejected", "error"]:
-                return jsonify({"ok": False, "msg": "Job is not rejected or error"}), 400
+            # Only allow re-submit for rejected/error/killed jobs
+            if original.get("status") not in ["rejected", "error", "killed"]:
+                return jsonify({"ok": False, "msg": "Job is not rejected, error, or killed"}), 400
 
             # Create new job with same details
             new_jid = generate_job_id()
