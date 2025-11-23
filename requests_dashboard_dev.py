@@ -356,6 +356,39 @@ def resubmit_job(jid):
                       type_=original.get("type"), items=[original.get("items")], status="pending")
     return jsonify({"ok": True, "new_id": new_jid})
 
+# ------------------------------------------------------------------
+# Unqueue job endpoint (move queued job back to pending)
+# ------------------------------------------------------------------
+@app.route("/unqueue/<jid>", methods=["POST"])
+def unqueue_job(jid):
+    if session.get("role","").strip().lower() != "approver":
+        return jsonify({"ok": False, "msg":"Forbidden"}), 403
+
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            # Check if job is queued
+            cur.execute("SELECT status, type, items FROM jobs WHERE id=%s", (jid,))
+            row = cur.fetchone()
+
+            if not row:
+                return jsonify({"ok": False, "msg": "Job not found"}), 404
+
+            if row.get("status") != "queued":
+                return jsonify({"ok": False, "msg": "Job is not queued"}), 400
+
+            # Move back to pending
+            cur.execute(
+                'UPDATE jobs SET status=%s, approved_at=NULL, approved_by=NULL WHERE id=%s',
+                ("pending", jid)
+            )
+            cur.execute('INSERT INTO job_logs (job_id, line) VALUES (%s,%s)',
+                       (jid, f"[{datetime.now().strftime('%H:%M:%S')}] 🔙 Job removed from queue by {session.get('username')}"))
+    finally:
+        conn.close()
+
+    return jsonify({"ok": True})
+
 @app.route("/logs/<jid>")
 def stream_logs(jid):
     # Simple SSE by polling job_logs table for new lines

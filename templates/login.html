@@ -121,22 +121,47 @@ input:focus {
 /* Login button */
 button {
   width: 100%;
-  margin-top: 8px;
-  padding: 13px;
+  margin-top: 16px;
+  padding: 14px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
-  background: linear-gradient(90deg, var(--accent1), var(--accent2));
-  font-weight: 800;
+  background: linear-gradient(90deg, #00e0ff, #7ef3b8);
+  font-weight: 700;
   font-size: 1rem;
-  color: #001;
-  transition: 0.16s ease;
+  letter-spacing: 0.3px;
+  color: #000;
+  transition: all 0.25s ease;
   text-align: center;
+  box-shadow: 0 4px 12px rgba(0,224,255,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+button:hover::before {
+  left: 100%;
 }
 
 button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,224,255,0.25);
+  box-shadow: 0 8px 28px rgba(0,224,255,0.35);
+  filter: brightness(1.05);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0,224,255,0.2);
 }
 
 /* Error box */
