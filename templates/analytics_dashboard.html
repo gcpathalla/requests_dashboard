@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Requests Analytics — Final Layout</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<style>
+:root {
+  --bg:#0b0b0b;
+  --panel:#141414;
+  --accent:#00e0ff;
+  --accent2:#7ef3b8;
+  --muted:#bfc9ce;
+}
+body {
+  margin:0;
+  background:var(--bg);
+  color:#e6faff;
+  font-family:"Segoe UI",sans-serif;
+  height:100vh;
+  display:flex;
+  overflow:hidden;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  flex:0 0 20%;
+  background:#121212;
+  border-right:1px solid #1e1e1e;
+  display:flex;
+  flex-direction:column;
+  padding:10px 12px;
+  overflow-y:auto;
+}
+.sidebar h2 {
+  font-size:1rem;
+  color:var(--accent);
+  margin:10px 0 6px;
+  border-bottom:1px solid #222;
+  padding-bottom:4px;
+}
+.checkbox-list {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:6px;
+}
+.checkbox-item {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  background:#0e0e0e;
+  border:1px solid #1c1c1c;
+  border-radius:6px;
+  padding:6px 8px;
+  transition:all .2s;
+}
+.checkbox-item:hover { background:#1a1a1a; }
+.checkbox-item input[type="checkbox"] {
+  accent-color:var(--accent);
+  width:16px; height:16px;
+}
+.select-all {
+  color:#bbb;
+  font-size:0.85rem;
+  margin-top:4px;
+  cursor:pointer;
+}
+.sidebar::-webkit-scrollbar {
+  width:8px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background:linear-gradient(180deg,var(--accent),var(--accent2));
+  border-radius:10px;
+}
+
+/* --- Main Layout --- */
+.main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+header {
+  background:#151515;
+  border-bottom:1px solid #222;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 16px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.4);
+}
+h1 {
+  margin:0;
+  font-size:1.1rem;
+  color:var(--accent);
+}
+.date-picker {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.date-picker input[type="date"] {
+  background:#111;
+  border:1px solid #333;
+  color:#fff;
+  border-radius:8px;
+  padding:5px 10px;
+}
+button.fancy-back {
+  background:linear-gradient(90deg,#00e0ff,#7ef3b8);
+  color:#000;
+  font-weight:600;
+  border:none;
+  border-radius:8px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all 0.25s ease;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+button.fancy-back:hover {
+  box-shadow:0 0 10px rgba(0,224,255,0.6);
+  transform:translateY(-1px);
+}
+
+/* --- Dashboard Grid --- */
+.dashboard {
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-areas:
+    "timeChart timeChart timeChart"
+    "barChart donutChart pieChart";
+  gap:16px;
+  padding:16px;
+  overflow:auto;
+}
+.dashboard::-webkit-scrollbar {
+  width:8px;
+}
+.dashboard::-webkit-scrollbar-thumb {
+  background:linear-gradient(180deg,var(--accent),var(--accent2));
+  border-radius:8px;
+}
+
+/* --- Cards --- */
+.card {
+  background:var(--panel);
+  border:1px solid #1f1f1f;
+  border-radius:12px;
+  padding:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.5);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-height:280px;
+}
+.card h3 {
+  margin:0;
+  font-size:1rem;
+  color:var(--accent);
+}
+.chart-wrap {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:240px;
+  overflow:hidden;
+}
+canvas {
+  max-width:100%!important;
+  max-height:240px!important;
+}
+
+/* --- Grid Area Assignments --- */
+#timeCard { grid-area: timeChart; }
+#barCard { grid-area: barChart; }
+#donutCard { grid-area: donutChart; }
+#pieCard { grid-area: pieChart; }
+
+.fade-slow {
+  animation:fadeSlow 1.2s ease forwards;
+  opacity:0;
+  transform:translateY(8px);
+}
+@keyframes fadeSlow { to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <h2>Users</h2>
+  <div class="select-all" id="selectAllUsers">☑ Select All Users</div>
+  <div class="checkbox-list" id="userList"></div>
+
+  <h2>Request Types</h2>
+  <div class="select-all" id="selectAllTypes">☑ Select All Types</div>
+  <div class="checkbox-list" id="typeList"></div>
+</div>
+
+<div class="main">
+  <header>
+    <h1>📊 Requests Analytics Dashboard</h1>
+    <div class="date-picker">
+      <label style="color:#ccc;font-size:0.85rem;">Date:</label>
+      <input type="date" id="filterDate" />
+      <button class="fancy-back" onclick="window.location.href='/requests_dashboard'">⬅ Back</button>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <div class="card fade-slow" id="timeCard">
+      <h3>Completed Over Time</h3>
+      <div class="chart-wrap"><canvas id="timeChart"></canvas></div>
+    </div>
+    <div class="card fade-slow" id="barCard">
+      <h3>Main Job Status</h3>
+      <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="card fade-slow" id="donutCard">
+      <h3>Completed by Type (Donut)</h3>
+      <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+    </div>
+    <div class="card fade-slow" id="pieCard">
+      <h3>Completed by User (Pie)</h3>
+      <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let jobs=[], selectedUsers=[], selectedTypes=[], allDates=[];
+let barChart, donutChart, pieChart, timeChart;
+const slowAnim={duration:2500,easing:'easeOutCubic'};
+
+async function loadJobs(){
+  const res=await fetch('/jobs');
+  jobs=await res.json();
+  allDates=[...new Set(jobs.map(j=>(j.end||j.created_at||'').substring(0,10)).filter(Boolean))].sort();
+  populateSidebar();
+  renderAll();
+}
+
+function populateSidebar(){
+  const users=[...new Set(jobs.map(j=>j.user))].sort();
+  const types=[...new Set(jobs.map(j=>j.type))].sort();
+  const userList=document.getElementById('userList');
+  const typeList=document.getElementById('typeList');
+  userList.innerHTML=users.map(u=>`<label class='checkbox-item'><input type='checkbox' value='${u}' checked> ${u}</label>`).join('');
+  typeList.innerHTML=types.map(t=>`<label class='checkbox-item'><input type='checkbox' value='${t}' checked> ${t}</label>`).join('');
+  selectedUsers=[...users];
+  selectedTypes=[...types];
+  userList.querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{selectedUsers=getChecked(userList);renderAll();}));
+  typeList.querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{selectedTypes=getChecked(typeList);renderAll();}));
+  document.getElementById('selectAllUsers').onclick=()=>toggleAll(userList,selectedUsers,'user');
+  document.getElementById('selectAllTypes').onclick=()=>toggleAll(typeList,selectedTypes,'type');
+  document.getElementById('filterDate').addEventListener('change',renderAll);
+}
+function getChecked(list){return [...list.querySelectorAll("input:checked")].map(i=>i.value);}
+function toggleAll(list,arr,kind){
+  const allInputs=list.querySelectorAll("input");
+  const allSelected=arr.length===allInputs.length;
+  allInputs.forEach(i=>i.checked=!allSelected);
+  if(kind==='user')selectedUsers=getChecked(list);
+  if(kind==='type')selectedTypes=getChecked(list);
+  renderAll();
+}
+
+function filtered(){
+  const date=document.getElementById('filterDate').value;
+  return jobs.filter(j=>{
+    const d=(j.end||j.created_at||'').substring(0,10);
+    return selectedUsers.includes(j.user)&&selectedTypes.includes(j.type)&&(!date||d===date);
+  });
+}
+
+function renderAll(){
+  const f=filtered();
+  const completed=f.filter(j=>j.status==='completed');
+  const byType={},byUser={},byDate={},counts={pending:0,queued:0,running:0,completed:0,rejected:0,error:0,scheduled:0};
+  f.forEach(j=>counts[j.status]=(counts[j.status]||0)+1);
+  completed.forEach(j=>{
+    byType[j.type]=(byType[j.type]||0)+1;
+    byUser[j.user]=(byUser[j.user]||0)+1;
+    const d=(j.end||'').substring(0,10); if(d)byDate[d]=(byDate[d]||0)+1;
+  });
+  renderBar(counts);
+  renderDonut(byType);
+  renderPie(byUser);
+  renderTime(byDate);
+}
+function renderBar(c){
+  const l=Object.keys(c).map(k=>k.toUpperCase()),v=Object.values(c);
+  const col=['#ffcf66','#00bfff','#00e0ff','#7ef3b8','#ffb7a6','#ff6b6b','#b97aff'];
+  if(barChart){barChart.data.labels=l;barChart.data.datasets[0].data=v;barChart.update(slowAnim);}
+  else barChart=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:l,datasets:[{data:v,backgroundColor:col,borderRadius:6}]},options:{animation:slowAnim,plugins:{legend:{display:false},datalabels:{color:'#000',anchor:'end',align:'start',formatter:v=>v>0?v:''}},scales:{x:{ticks:{color:'#ccc'},grid:{display:false}},y:{ticks:{color:'#ccc'},beginAtZero:true}}},plugins:[ChartDataLabels]});}
+function renderDonut(o){const l=Object.keys(o),v=Object.values(o),c=genColors(l.length);if(donutChart){donutChart.data.labels=l;donutChart.data.datasets[0].data=v;donutChart.data.datasets[0].backgroundColor=c;donutChart.update(slowAnim);}else donutChart=new Chart(document.getElementById('donutChart'),{type:'doughnut',data:{labels:l,datasets:[{data:v,backgroundColor:c}]},options:{animation:slowAnim,plugins:{legend:{labels:{color:'#ccc'}},datalabels:{display:false}}}});}
+function renderPie(o){const l=Object.keys(o),v=Object.values(o),c=genColors(l.length,true);if(pieChart){pieChart.data.labels=l;pieChart.data.datasets[0].data=v;pieChart.data.datasets[0].backgroundColor=c;pieChart.update(slowAnim);}else pieChart=new Chart(document.getElementById('pieChart'),{type:'pie',data:{labels:l,datasets:[{data:v,backgroundColor:c}]},options:{animation:slowAnim,plugins:{legend:{labels:{color:'#ccc'}},datalabels:{display:false}}}});}
+
+function renderTime(o) {
+  const labels = Object.keys(o).sort();
+  const values = labels.map(k => o[k]);
+
+  const newData = {
+    labels,
+    datasets: [{
+      label: 'Completions',
+      data: values,
+      borderColor: '#00e0ff',
+      backgroundColor: 'rgba(0,224,255,0.15)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }]
+  };
+
+  const options = {
+    animation: {
+      duration: 2500, // smooth but fast
+      easing: 'easeInOutCubic', // nice curve
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    scales: {
+      x: { ticks: { color: '#ccc' } },
+      y: { ticks: { color: '#ccc' }, beginAtZero: true }
+    }
+  };
+
+  if (timeChart) {
+    // 🔄 Instead of reinitializing, update dataset smoothly
+    timeChart.data.labels = labels;
+    timeChart.data.datasets[0].data = values;
+
+    // ✅ Keeps previous animation state — animates between old & new
+    timeChart.update();
+  } else {
+    timeChart = new Chart(document.getElementById('timeChart'), {
+      type: 'line',
+      data: newData,
+      options
+    });
+  }
+}
+
+
+function genColors(n){const b=['#00e0ff','#7ef3b8','#ffb347','#b97aff','#ff6b6b','#ffcf66','#00bfff'];const out=[];for(let i=0;i<n;i++)out.push(b[i%b.length]);return out;}
+loadJobs();
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Requests Dashboard – Login</title>
+
+<style>
+:root {
+  --accent1: #00e0ff;
+  --accent2: #7ef3b8;
+  --bg-dark: #0a0f14;
+  --glass: rgba(255,255,255,0.04);
+  --border: rgba(0,224,255,0.15);
+  --text: #e6faff;
+  --muted: #9fb3ba;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(0,224,255,0.12), transparent 40%),
+              radial-gradient(circle at 80% 80%, rgba(126,243,184,0.08), transparent 45%),
+              #05080c;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI", sans-serif;
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* Background glow grid */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml;utf8,<svg width='300' height='300' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' fill='none' stroke='rgba(0,255,255,0.07)' stroke-width='1'/></svg>");
+  opacity: 0.08;
+  background-size: 120px 120px;
+  z-index: 0;
+}
+
+/* Card wrapper */
+.login-card {
+  position: relative;
+  width: 380px;
+  padding: 75px;
+  border-radius: 18px;
+  background: rgba(10,12,14,0.55);
+  border: 1px solid rgba(0,224,255,0.08);
+  box-shadow:
+    0 0 20px rgba(0,224,255,0.08),
+    0 0 70px rgba(0,224,255,0.05),
+    inset 0 0 12px rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px) saturate(140%);
+  z-index: 10;
+  animation: fadeIn 1s ease forwards;
+}
+
+/* LOGO */
+.logo-box {
+  width: 350px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 29px;
+  margin-bottom: 18px;
+  color: #001;
+  box-shadow: 0 4px 16px rgba(0,224,255,0.25);
+}
+
+/* Title */
+h2 {
+  margin: 0;
+  margin-bottom: 6px;
+  font-weight: 700;
+  color: var(--accent1);
+  font-size: 1.25rem;
+}
+
+.sub {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* FIELD */
+.field {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,224,255,0.14);
+  background: rgba(0,0,0,0.35);
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: 0.2s;
+}
+
+input:focus {
+  border-color: var(--accent1);
+  box-shadow: 0 0 8px rgba(0,224,255,0.25);
+}
+
+/* Login button */
+button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  font-weight: 800;
+  color: #001;
+  transition: 0.16s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,224,255,0.25);
+}
+
+/* Error box */
+.error {
+  background: rgba(255, 100, 100, 0.07);
+  color: #ffb7b7;
+  border: 1px solid rgba(255,100,100,0.15);
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+/* animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+
+<body>
+<div class="bg-grid"></div>
+
+<div class="login-card">
+
+  <h2>Requests Dashboard</h2>
+  <div class="sub">Sign in to continue</div>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" name="username" id="username" required />
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" required />
+    </div>
+
+    <button type="submit">Sign in</button>
+  </form>
+</div>
+
+</body>
+</html>

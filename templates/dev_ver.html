@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+
+
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Requests Dashboard</title>
+<style>
+:root{
+  /* slightly lighter theme adjustments */
+  --etl:#00e0ff;
+  --view:#b97aff;
+  --table:#ffb347;
+  --success:#7ef3b8;
+  --warn:#ffcf66;
+  --err:#ff6b6b;
+  --bg:#171717;
+  --panel:#171717;
+  --mepanel:#171717;
+  --card:#1f1f1f;
+  --muted:#bdbdbd;
+  --accent-text:#e6faff;
+}
+*{box-sizing:border-box}
+body{margin:3px;font-family:"Segoe UI",sans-serif;background:var(--bg);color:var(--accent-text);height:99vh;display:flex;overflow:hidden}
+.left{flex:0 0 18%;background:var(--panel);padding:18px;overflow:auto;border-right:1px solid #1e1e1e}
+.right{flex:1;padding:0px;display:flex;flex-direction:column;overflow:hidden}
+h1{color:var(--etl);margin:0}
+.section-title{color:#cfeff7;margin-top:18px;margin-bottom:8px;font-weight:700}
+.job-card{background:var(--card);border-radius:12px;padding:10px;margin-bottom:10px;border:1px solid #222;transition:transform .18s,box-shadow .18s}
+.job-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.6)}
+.meta{font-size:0.9rem;color:var(--muted);margin-top:6px}
+.actions{margin-top:10px;display:flex;gap:8px}
+.btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer;transition:all .2s}
+.btn:hover{opacity:.85}
+.btn-approve{background:var(--etl);color:#000;font-weight:700}
+.btn-reject{background:#333;color:#fff}
+.running-card{background:linear-gradient(180deg,#0f0f0f,#151515);border-radius:12px;padding:12px;border:1px solid #222;margin-bottom:16px}
+.progress-track{height:12px;background:#232323;border-radius:8px;overflow:hidden;margin-top:10px}
+.progress-fill{height:12px;background:linear-gradient(90deg,var(--etl),var(--success));width:0%;border-radius:6px;transition:width 0.8s ease-in-out;box-shadow:0 0 8px rgba(0,255,200,0.12)}
+.log-area{background:#0c0c0c;border-radius:8px;padding:10px;height:160px;overflow:auto;border:1px solid #222;margin-top:10px;font-size:0.85rem;white-space:pre-wrap; color: #00ff66;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;font-weight:700;font-size:0.75rem;white-space:nowrap}
+.badge-pending{background:var(--warn);color:#000}
+.badge-queued{background:#444;color:#fff}
+.badge-running{background:#00bfff;color:#000}
+.badge-completed{background:var(--success);color:#000}
+.badge-rejected{background:#ffb7a6;color:#000}
+.badge-error{background:var(--err);color:#000}
+.spinner{width:12px;height:12px;border:2px solid rgba(0,0,0,0.1);border-top:2px solid #000;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.empty{color:#9c9c9c;padding:12px}
+.completed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:10px}
+/* Extra padding to prevent completed job cards from touching scrollbar */
+#completedContainer {
+  padding-right: 12px;  /* You can tweak this number (20–32px looks best) */
+}
+
+.completed-card{background:var(--card);border-radius:12px;padding:10px;border:1px solid #222;transition:all .18s ease-in-out;display:flex;flex-direction:column;justify-content:flex-start}
+.completed-card:hover{transform:translateY(-3px);box-shadow:0 0 12px rgba(0,224,255,0.08)}
+.filter-row{display:flex;gap:10px;align-items:center;margin-top:8px}
+.modal{position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999}
+.modal .body{background:#0f0f0f;padding:18px;border-radius:12px;border:1px solid #222;width:720px;max-width:96%}
+.close-x{float:right;background:transparent;border:none;color:#999;font-size:1.1rem;cursor:pointer}
+textarea{width:100%;height:120px;background:#0b0b0b;color:var(--accent-text);border:1px solid #222;padding:8px;border-radius:8px}
+.small{font-size:0.9rem;color:var(--muted)}
+.header-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.top-controls{display:flex;gap:8px;align-items:center}
+.filter-select{background:#1a1a1a;color:var(--accent-text);border:1px solid #2a2a2a;padding:6px 8px;border-radius:6px}
+.raise-btn{background:linear-gradient(90deg,var(--etl),#2ad7ff);color:#000;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+.left-panel-mini{margin-top:12px;border-radius:10px;padding:10px;background:linear-gradient(180deg,#111,#0e0e0e);border:1px solid #222}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab-button{padding:8px 10px;border-radius:8px;border:none;background:#121212;color:var(--muted);cursor:pointer}
+.tab-button.active{background:var(--etl);color:#000}
+.checkbox-list{background:#141414;border-radius:8px;padding:8px;max-height:240px;overflow:auto}
+.checkbox-item{display:inline-block;margin:4px}
+.checkbox-item input[type="checkbox"]{display:none}
+.checkbox-item label{display:inline-block;padding:6px 10px;border-radius:20px;background:transparent;color:#ccc;border:1px solid #2a2a2a;cursor:pointer}
+.checkbox-item input[type="checkbox"]:checked + label{background:var(--etl);color:#000;border-color:var(--etl)}
+.submit-btn{width:100%;background:linear-gradient(90deg,var(--etl),#00c4ff);color:#000;padding:10px;font-weight:bold;border:none;border-radius:8px;cursor:pointer;margin-top:10px}
+.right-top-sticky{position:sticky;top:0;background:var(--mepanel);z-index:5;padding:11px;border-bottom:1px solid #202020;box-shadow: 0 2px 8px rgba(0,0,0,0.6);    border-radius: 19px;     /* rounded corners */
+    margin: .5px; }
+.jobs-scroll{overflow:auto;padding:12px;height:calc(100vh - 170px)}
+
+.job-column{flex:1;background:transparent;padding:6px;min-width:0}
+.section-header{font-weight:700;padding:8px 6px;position:sticky;top:46px;background:transparent;z-index:4}
+.request-card{background:#141414;border:1px solid #222;border-radius:8px;padding:10px;margin-bottom:10px}
+.status-badge{display:inline-block;background:#ffb400;color:#000;padding:3px 8px;border-radius:12px;font-size:.8em;margin-left:6px}
+.small-muted{font-size:.9rem;color:var(--muted)}
+.user-pill{background:#1b1b1b;padding:4px 8px;border-radius:8px;border:1px solid #222;color:var(--muted);font-size:.85rem}
+/* Sleek themed scrollbars for all panels */
+/* ---- Subtle dark theme scrollbars ---- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1f1f1f, #2c2c2c);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 224, 255, 0.15);
+  box-shadow: 0 0 4px rgba(0, 224, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2a2a2a, #383838);
+  box-shadow: 0 0 6px rgba(0, 224, 255, 0.25);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a rgba(255,255,255,0.04);
+}
+
+/* LEFT header must be opaque and sit above everything */
+
+
+/* Scroll area below the sticky header */
+.pending-scroll {
+  overflow-y: auto;
+  height: calc(100vh - 86px);  /* match the main right-side sections */
+  padding: 10px 6px 30px 6px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Fix: make calendar icon visible on dark background */
+input[type="date"] {
+  background: #111;
+  border: 1px solid #333;
+  color: var(--accent-text);
+  padding: 6px 30px 6px 8px; /* extra right padding for icon space */
+  border-radius: 6px;
+  font-family: inherit;
+  position: relative;
+}
+
+/* Force show the native calendar icon in all browsers */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.8);
+  opacity: 1;
+  cursor: pointer;
+}
+/* Make the datetime-local picker look identical to the Filter Date input */
+input[type="datetime-local"] {
+  background: #111;
+  border: 1px solid #333;
+  color: var(--accent-text);
+  padding: 6px 30px 6px 8px;
+  border-radius: 6px;
+  font-family: inherit;
+  position: relative;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.8);
+  opacity: 1;
+  cursor: pointer;
+}
+
+/* Optional hover/focus effects for same teal highlight */
+input[type="datetime-local"]:hover {
+  border-color: var(--etl);
+}
+
+input[type="datetime-local"]:focus {
+  outline: none;
+  border-color: var(--etl);
+  box-shadow: 0 0 6px rgba(0, 224, 255, 0.4);
+}
+
+/* For Firefox */
+input[type="date"]::-moz-focus-inner {
+  border: 0;
+}
+
+/* Optional hover focus styles */
+input[type="date"]:hover {
+  border-color: var(--etl);
+}
+
+input[type="date"]:focus {
+  outline: none;
+  border-color: var(--etl);
+  box-shadow: 0 0 6px rgba(0, 224, 255, 0.4);
+}
+
+/* Ensure the left column doesn't produce a page scrollbar */
+.left {
+  flex: 0 0 18%;
+  background: var(--panel);
+  padding: 0;                         /* header contains padding */
+  overflow: hidden;                   /* only .pending-scroll will scroll */
+  border-right: 1px solid #1e1e1e;
+}
+
+/* Make cards render below the header in stacking context */
+.job-card, .completed-card, .running-card {
+  position: relative;
+  z-index: 0;
+}
+
+
+
+/* Fade animation base */
+
+/* Active state (visible) */
+
+/* Optional fade-out before removal */
+
+
+/* --- Smooth grid + fade transitions --- */
+.running-card.fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 1.2s ease, transform 0.35s ease;
+}
+.fade-in {
+  animation: fadeInCard 1.5s ease-out forwards;
+}
+@keyframes fadeInCard {
+  from { opacity: 0; transform: translateY(15px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.completed-card {
+  transition: transform 1.2s ease, opacity 1.2s ease;
+}
+.raise-full-btn {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 100px;
+  background: linear-gradient(90deg,#00bcd4,#0099cc);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: background 1.25s ease, transform 0.15s ease;
+}
+
+.raise-full-btn:hover {
+  background: linear-gradient(90deg,#00bcd4,#0099cc);
+  transform: translateY(-1px);
+}
+
+window.addEventListener('error', e => {
+  console.error('Global error:', e.error || e.message);
+});
+#successModal {
+  z-index: 10000 !important;
+}
+#raiseModal {
+  z-index: 9999 !important;
+}
+
+
+
+    /* Switch styles */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 24px;
+    }
+    .switch input {display:none;}
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #333;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--etl);
+      box-shadow: 0 0 8px rgba(0,224,255,0.5);
+    }
+    input:checked + .slider:before {
+      transform: translateX(22px);
+      background-color:#000;
+    }
+/* Neon glass header for Completed column */
+.completed-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  backdrop-filter: blur(6px) saturate(1.1);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  background: linear-gradient(180deg, rgba(14,16,18,0.55), rgba(8,10,12,0.45));
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow:
+    0 6px 24px rgba(0,224,255,0.04),
+    0 0 18px rgba(0,224,255,0.02) inset;
+  display: flex;
+  align-items: center;
+}
+
+/* Neon gradient top border line using pseudo-element */
+
+
+/* inner layout */
+.completed-header-inner {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* single stat */
+.stat {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  min-width:120px;
+}
+.stat-icon {
+  width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 6px 18px rgba(0,224,255,0.02), 0 0 12px rgba(0,224,255,0.03) inset;
+}
+
+/* labels/values */
+.stat-label { font-size:0.75rem; color:#bfc9ce; }
+.stat-value { font-weight:800; font-size:1.15rem; color:#e6faff; }
+
+/* color accents */
+#countCompleted { color: var(--success, #7ef3b8); }
+#countRejected  { color: #ffb7a6; }
+#countError     { color: var(--err, #ff6b6b); }
+
+/* right side percent badge */
+.header-right { display:flex; align-items:center; gap:8px; }
+.percent-badge {
+  background: linear-gradient(90deg,#00e0ff,#7ef3b8);
+  color:#000; font-weight:700;
+  padding:8px 10px; border-radius:10px; font-size:0.9rem;
+  box-shadow: 0 6px 18px rgba(0,224,255,0.06);
+}
+
+/* small responsive tweaks */
+@media (max-width: 920px) {
+  .completed-header-inner { gap:8px; }
+  .stat { min-width:90px; }
+  .stat-icon { width:40px;height:40px;font-size:16px; }
+  .percent-badge { padding:6px 8px; font-size:0.85rem; }
+}
+/* Colors for new counters */
+#countPending {
+  color: var(--warn, #ffcf66);
+}
+
+#countQueued {
+  color: #00bfff;
+}
+
+
+
+</style>
+
+
+
+
+
+</head>
+<body>
+<div class="left">
+<!-- Sticky Pending header -->
+<!-- Sticky header with full Raise Request button -->
+<!-- Sticky header with full Raise Request button -->
+<div style="padding: 12px; text-align: center;">
+    <button class="raise-btn raise-full-btn" onclick="openRaiseModal()">Raise Request</button>
+</div>
+
+<!-- Scrollable pending list -->
+<div class="pending-scroll">
+<div id="pendingList" style="margin-top:6px"></div>
+</div>
+</div>
+<div class="right">
+<div class="right-top-sticky">
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<div>
+    <h1 style="margin:0;color:#ffb347;">Requests dashboard</h1>
+    <div class="small" style="margin-top:6px"></div>
+</div>
+
+
+<div class="top-controls">
+    <button id="refreshDashboardBtn" title="Clear filters" style="
+  background: linear-gradient(90deg,#000000,#000000);
+  color: #000;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 1px 1px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-left: 8px;
+">
+  ♻️
+</button>
+<label class="small-muted">Status</label>
+<select class="filter-select" id="statusFilter">
+  <option value="all">All</option>
+  <option value="completed">Completed</option>
+  <option value="rejected">Rejected</option>
+  <option value="error">Error</option>
+</select>
+
+<label class="small-muted">User</label>
+<select class="filter-select" id="userFilter"><option value="all">All Users</option></select>
+<label class="small-muted">Request</label>
+<select class="filter-select" id="typeFilter"><option value="all">All</option></select>
+<label class="small-muted">Completed on</label>
+<input id="filterDate" type="date"/>
+
+
+<button id="openAnalyticsBtn" title="View Analytics" style="
+  background:none;
+  border:none;
+  font-size:1.2rem;
+  cursor:pointer;
+  color:#00e0ff;
+  margin-left:6px;">
+  📊
+</button>
+<script>
+  let actionLock = false;          // prevents UI refresh during approve/reject
+let actionJobId = null;          // which job is being acted on
+
+document.getElementById('openAnalyticsBtn').addEventListener('click', () => {
+  window.location.href = '/analytics_dashboard';
+});
+</script>
+
+
+
+</body>
+</html>
+
+
+<!-- New Raise Request button -->
+</div>
+</div>
+</div>
+<div class="jobs-scroll" id="jobsScroll" style="display:flex;gap:0;padding:12px;height:calc(100vh - 86px);">
+<!-- Middle column (Running + Queued) -->
+<div style="flex:0 0 26%;min-width:260px;display:flex;flex-direction:column;
+            border-right:1px solid rgba(255,255,255,0.1);
+
+            box-shadow:inset -3px 0 6px rgba(0,0,0,0.3);">
+<div style="flex:1;overflow-y:auto;padding:0 12px 12px 0;">
+<div id="runningContainer"></div>
+<div class="section-title">Queued Jobs</div>
+<div id="queuedContainer" style="display:flex;flex-direction:column;gap:12px"></div>
+</div>
+</div>
+<!-- Right column (Completed) -->
+<div style="flex:1;display:flex;flex-direction:column;padding-left:16px;">
+<div style="flex:1;overflow-y:auto;">
+<div class="section-title" style="color:var(--success);margin-top:0px"></div>
+<!-- INSERT: Neon sticky header for Completed section -->
+<!-- UPDATED: Neon sticky header with all 5 status categories -->
+<div id="completedHeader" class="completed-header" aria-hidden="false">
+  <div class="completed-header-inner">
+
+    <!-- Pending -->
+    <div class="stat">
+      <div class="stat-icon">🕒</div>
+      <div class="stat-body">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" id="countPending">0</div>
+      </div>
+    </div>
+
+    <!-- Queued -->
+    <div class="stat">
+      <div class="stat-icon">📥</div>
+      <div class="stat-body">
+        <div class="stat-label">Queued</div>
+        <div class="stat-value" id="countQueued">0</div>
+      </div>
+    </div>
+
+    <!-- Completed -->
+    <div class="stat">
+      <div class="stat-icon">✅</div>
+      <div class="stat-body">
+        <div class="stat-label">Completed</div>
+        <div class="stat-value" id="countCompleted">0</div>
+      </div>
+    </div>
+
+    <!-- Rejected -->
+    <div class="stat">
+      <div class="stat-icon">❌</div>
+      <div class="stat-body">
+        <div class="stat-label">Rejected</div>
+        <div class="stat-value" id="countRejected">0</div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="stat">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-body">
+        <div class="stat-label">Error</div>
+        <div class="stat-value" id="countError">0</div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE PERCENT BUBBLE -->
+    <div class="header-right">
+      <div id="completedPercent" class="percent-badge">—</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="completed-grid" id="completedContainer" style="margin-top:8px;padding-right:12px"></div>
+</div>
+</div>
+<!-- Reject Modal -->
+<div class="modal" id="rejectModal">
+<div class="body">
+<button class="close-x" onclick="closeRejectModal()">✕</button>
+<h2>Reject Job</h2>
+<div style="margin-top:8px;color:var(--muted)">Please enter reason for rejection:</div>
+<textarea id="rejectReason" placeholder="Type reason here..."></textarea>
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+<button class="btn" onclick="confirmReject()">Confirm</button>
+<button class="btn" onclick="closeRejectModal()">Cancel</button>
+</div>
+</div>
+</div>
+<!-- Reason Modal -->
+<div class="modal" id="showReasonModal">
+<div class="body">
+<button class="close-x" onclick="closeShowReason()">✕</button>
+<h2 id="showReasonTitle">Reason / Error Log</h2>
+<div id="showReasonText" style="white-space:pre-wrap;background:#0b0b0b;padding:1px;border-radius:8px;border:1px solid #222;height:320px;overflow:auto;margin-top:1px"></div>
+</div>
+</div>
+<!-- Raise Request Modal (replicates user left panel) -->
+<div class="modal" id="raiseModal">
+<div class="body" style="max-width:880px;">
+<button class="close-x" onclick="closeRaiseModal()">✕</button>
+
+<div style="display:flex;align-items:center;justify-content:space-between;">
+<div style="display:flex;align-items:center;gap:10px;">
+  <h2 style="margin:0;">Raise Request</h2>
+
+
+</div>
+
+
+
+
+<div style="display:flex;align-items:center;gap:10px;">
+  {% if is_approver %}
+<label class="switch" style="display:inline-flex;align-items:center;gap:6px;color:#ccc;font-weight:600;">
+
+<input id="scheduleToggle" onchange="toggleSchedule()" style="display:none;" type="checkbox"/>
+<span class="slider"></span>
+</label>
+<input id="scheduleTime" type="datetime-local" style="display:none;" />
+  <button onclick="openScheduledList()" title="View Scheduled Requests" style="background:none;border:none;color:#00e0ff;cursor:pointer;font-size:1.2rem;">⏰</button>
+  {% endif %}
+</div>
+</div>
+
+<div style="display:flex;gap:18px;margin-top:12px;flex-wrap:wrap">
+<div style="flex:1 1 320px;min-width:280px">
+<!-- Tabs row + repositioned ➕ button -->
+<div style="
+  display:flex;
+  align-items:center;
+  flex-wrap:nowrap;
+  justify-content:flex-start;
+  gap:8px;
+  margin-bottom:8px;
+">
+
+  <div class="tabs" role="tablist" style="
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:nowrap;
+  ">
+    {% for req_type in requests_data.keys() %}
+      <button class="tab-button {% if loop.first %}active{% endif %}"
+              data-tab="{{ req_type|lower }}"
+              onclick="switchModalTab(event,'{{ req_type|lower }}')"
+              style="border-bottom:3px solid {{ colors[req_type] if req_type in colors else 'transparent' }};">
+        {{ req_type }}
+      </button>
+    {% endfor %}
+  </div>
+
+  <!-- ➕ icon perfectly aligned beside tabs -->
+{% if is_approver %}
+  <button id="manageTypesBtn"
+          title="Manage Request Types"
+          onclick="window.location.href='/manage_types'"
+          style="
+            background:none;
+            border:none;
+            color:#b97aff;
+            cursor:pointer;
+            font-size:1.3rem;
+            line-height:1;
+            margin-left:4px;
+            flex-shrink:0;
+            transition:all 0.25s ease;
+          ">
+    ➕
+  </button>
+ {% endif %}
+</div>
+<!-- Modal tabs -->
+{% for req_type, items in requests_data.items() %}
+<div class="modal-tab {% if loop.first %}active{% endif %}" id="modal-{{ req_type|lower }}" style="{% if not loop.first %}display:none{% endif %}">
+<form onsubmit="return handleModalSubmit(event,'{{ req_type }}')">
+<div class="checkbox-list" id="{{ req_type|lower }}List">
+<div class="checkbox-item"><input id="{{ req_type|lower }}SelectAll" onclick="toggleAllFromModal('{{ req_type|lower }}', this)" type="checkbox"/><label for="{{ req_type|lower }}SelectAll">Select All</label></div>
+              {% for item in items %}
+                <div class="checkbox-item"><input id="m_{{ req_type|lower }}_{{ loop.index }}" name="items" type="checkbox" value="{{ item | e }}"/><label for="m_{{ req_type|lower }}_{{ loop.index }}">{{ item | e }}</label></div>
+              {% endfor %}
+            </div>
+<button class="submit-btn" type="submit">Submit</button>
+
+
+</form>
+</div>
+{% endfor %}
+<!-- End modal tabs -->
+<div style="flex:0 0 320px;min-width:260px">
+<div style="background:#0f0f0f;padding:12px;border-radius:8px;border:1px solid #202020">
+<div style="font-weight:700;margin-bottom:6px">Quick Info</div>
+<div class="small-muted">User: <span class="user-pill">{{ username }}</span></div>
+<div class="small-muted" style="margin-top:8px">Submitted requests will create job files in <code>logs/requests/pending</code>.</div>
+<div style="margin-top:12px;color:var(--muted)">After submission you will see a success message with the number of requests submitted.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Success Modal -->
+<div class="modal" id="successModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);justify-content:center;align-items:center;">
+<div class="modal-content" style="background:#111;padding:25px;border-radius:12px;text-align:center;">
+<h2 id="modalTitle">✅ Requests Submitted!</h2>
+<p id="modalMsg">Your requests were created successfully.</p>
+<button onclick="closeSuccessAndRaise()" style="margin-top:15px;background:var(--etl);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold;color:#000;">OK</button>
+</div>
+</div>
+<script>
+let jobs={}, logStreams={}, pendingRejectJobId=null;
+// Fix: ensure polling pause variable exists
+let pausePollingUntil = 0;
+
+const isApprover = {{ 'true' if is_approver else 'false' | lower }};
+
+// --- Force-repaint modal helper (to fix success modal not showing) ---
+function showModal(modalId) {
+  const m = document.getElementById(modalId);
+  // Force layout recalculation before showing
+  void m.offsetHeight;
+  m.style.display = 'flex';
+  m.focus();
+}
+
+
+// small helper
+function escapeHtml(s){return s?s.replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])):'';}
+
+
+// dynamic color mapping injected from server
+const typeColors = {{ colors | tojson | safe }} || {};
+
+function accentForType(t){
+  if(!t) return 'var(--etl)';
+  if(typeColors && typeColors[t]) return typeColors[t];
+  const found = Object.keys(typeColors).find(k => k.toLowerCase()=== (t||'').toLowerCase());
+  if(found) return typeColors[found];
+  const s = (t||'').toLowerCase();
+  if(s.includes('view')) return 'var(--view)';
+  if(s.includes('table')) return 'var(--table)';
+  return 'var(--etl)';
+}
+
+/* -------------------------
+   Jobs fetching & rendering
+   ------------------------- */
+/* -------------------------
+   Jobs fetching & rendering
+   ------------------------- */
+async function fetchJobs(fullRefresh = true){
+  try{
+    const r = await fetch('/jobs');
+    const data = await r.json();
+
+    // update job map
+    const map = {};
+    data.forEach(j => map[j.id] = j);
+    jobs = map;
+    // Only populate filters once
+
+    populateUserFilter();
+    populateTypeFilter();
+
+
+
+    // --- update progress bar for running job but DO NOT re-render running card ---
+    const running = Object.values(jobs).find(j => j.status === 'running');
+    if (running) {
+        const prog = document.getElementById('prog_' + running.id);
+        if (prog) prog.style.width = running.progress + '%';
+    }
+
+if (!actionLock) {
+    renderPending();
+    renderQueued();
+    renderRunning();
+    renderCompleted();
+    updateCompletedHeaderCounts();
+}
+
+  } catch(e){
+    console.error('fetchJobs error', e);
+  }
+}
+
+
+// Pending
+// ✅ Updated Pending section with filters applied
+function renderPending(){
+  const el=document.getElementById('pendingList');
+  let arr=Object.values(jobs).filter(j=>j.status==='pending');
+
+  // 🟢 Apply User & Request Type filters
+  const selUser=document.getElementById('userFilter').value;
+  const selType=document.getElementById('typeFilter').value;
+  if(selUser!=='all')arr=arr.filter(j=>j.user===selUser);
+  if(selType!=='all')arr=arr.filter(j=>j.type===selType);
+
+  // Sort oldest first
+  arr.sort((a,b)=>new Date(a.created_at||a.time||0)-new Date(b.created_at||b.time||0));
+
+  el.innerHTML='';
+  if(!arr.length){el.innerHTML='<div class="empty">No pending jobs</div>';return;}
+
+  arr.forEach(j=>{
+    const card=document.createElement('div');
+    card.className='job-card';
+    card.style.borderLeft=`4px solid ${accentForType(j.type)}`;
+    let actions='';
+    if(isApprover){
+      actions=`<div class="actions">
+        <button class="btn btn-approve" onclick="approveJob('${j.id}')">Approve</button>
+        <button class="btn btn-reject" onclick="openRejectModal('${j.id}')">Reject</button>
+      </div>`;
+    } else {
+      actions=`<div class="meta small-muted">Awaiting approval</div>`;
+    }
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${escapeHtml(mapTitle(j.type))}</strong>
+        <div class="meta">${escapeHtml(j.items||'')}</div></div>
+        <span class="badge badge-pending">PENDING</span>
+      </div>
+      <div class="meta">👤 ${escapeHtml(j.display_name || j.user)}<br>🕒 ${escapeHtml(j.created_at||j.time||'')}</div>
+      ${actions}`;
+    el.appendChild(card);
+  });
+}
+
+// Queued
+function renderQueued(){
+  const el=document.getElementById('queuedContainer');
+  // Apply filters: user & type
+  const selUser=document.getElementById('userFilter').value;
+  const selType=document.getElementById('typeFilter').value;
+
+  let arr=Object.values(jobs).filter(j=>j.status==='queued');
+  if(selUser!=='all') arr = arr.filter(j=>j.user===selUser);
+  if(selType!=='all') arr = arr.filter(j=>j.type===selType);
+
+  arr.sort((a,b)=> new Date(a.approved_at||a.created_at||0) - new Date(b.approved_at||b.created_at||0));
+  el.innerHTML='';
+  if(!arr.length){el.innerHTML='<div class="empty">No queued jobs</div>';return;}
+  arr.forEach((j,idx)=>{
+    const card=document.createElement('div');
+    card.className='job-card';
+    card.style.borderTop=`4px solid ${accentForType(j.type)}`;
+    const pos=idx+1;
+    card.innerHTML=`<span class="badge badge-queued">#${pos} in Queue</span>
+      <strong>${escapeHtml(mapTitle(j.type))}</strong>
+      <div class="meta">${escapeHtml(j.items||'')}</div>
+      <div class="meta">👤 ${escapeHtml(j.display_name || j.user)}<br>🕒 ${escapeHtml(j.approved_at||j.created_at)}</div>`;
+    el.appendChild(card);
+  });
+}
+// 🔁 Refresh Page Button
+document.getElementById('refreshDashboardBtn').addEventListener('click', () => {
+  // reload the page completely
+  location.reload();
+});
+
+// Running
+function renderRunning(){
+  const el=document.getElementById('runningContainer');
+  const selUser=document.getElementById('userFilter').value;
+  const selType=document.getElementById('typeFilter').value;
+
+  let arr=Object.values(jobs).filter(j=>j.status==='running');
+  if(selUser!=='all') arr = arr.filter(j=>j.user===selUser);
+  if(selType!=='all') arr = arr.filter(j=>j.type===selType);
+
+  el.innerHTML='';
+if (!arr.length) {
+  el.innerHTML = '';
+  lastRunningId = null;
+  return;
+}
+
+
+  // show the first running job (there should only be one in this design)
+  const job = arr[0];
+  const accent = accentForType(job.type);
+  const card=document.createElement('div');
+  card.className='running-card'; card.style.borderTop=`4px solid ${accent}`;
+  card.innerHTML=`<span class="badge badge-running">RUNNING <div class="spinner" style="margin-left:8px"></div></span>
+    <strong>${escapeHtml(mapTitle(job.type))}</strong><div class="meta">${escapeHtml(job.items||'')}</div>
+    <div class="meta">👤 ${escapeHtml(job.user)}<br>🕒 ${escapeHtml(job.start || job.approved_at || job.created_at)}
+
+</div>
+    <div class="progress-track"><div id="prog_${job.id}" class="progress-fill" style="width:${job.progress}%"></div></div>
+    <div id="logs_${job.id}" class="log-area"></div>`;
+  el.appendChild(card);
+  startLogStream(job.id);
+}
+
+// Completed (includes completed, rejected, error respectively)
+function renderCompleted(){
+  const el=document.getElementById('completedContainer');
+  const selUser=document.getElementById('userFilter').value;
+  const selType=document.getElementById('typeFilter').value;
+  const date=document.getElementById('filterDate').value;
+  const selStatus = document.getElementById('statusFilter').value;
+
+
+  let arr = Object.values(jobs).filter(j=>['completed','rejected','error'].includes(j.status));
+
+  if(selUser!=='all') arr = arr.filter(j=>j.user===selUser);
+  if(selType!=='all') arr = arr.filter(j=>j.type===selType);
+  if (selStatus !== 'all') arr = arr.filter(j => j.status === selStatus);
+
+  if(date){
+    arr = arr.filter(j=> (j.end||j.created_at||'').substring(0,10) === date );
+  }
+
+  // newest first
+  arr.sort((a,b)=> new Date(b.end||b.created_at||0) - new Date(a.end||a.created_at||0));
+  el.innerHTML='';
+  if(!arr.length){el.innerHTML='<div class="empty">No completed jobs for selected date</div>';return;}
+  arr.forEach(j=>{
+    const card=document.createElement('div');
+    card.className='completed-card'; card.style.borderLeft=`4px solid ${accentForType(j.type)}`;
+    let badgeText='COMPLETED', cls='badge-completed', btn='';
+    if(j.status==='rejected'){ badgeText='REJECTED'; cls='badge-rejected'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>`; }
+    else if(j.status==='error'){ badgeText='ERROR'; cls='badge-error'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>`; }
+
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span class="badge ${cls}">${badgeText}</span>${btn}
+      </div>
+      <strong>${escapeHtml(mapTitle(j.type))}</strong>
+      <div class="meta">📦 ${escapeHtml(j.items||'')}</div>
+      <div class="meta">👤 ${escapeHtml(j.display_name || j.user)}</div>
+      <div class="meta">🕒 ${escapeHtml(j.end||j.created_at)}</div>`;
+    el.appendChild(card);
+  });
+}
+
+// INSERT: Neon header counts updater
+function animateCount(el, to) {
+  if (!el) return;
+  const from = parseInt(el.textContent.replace(/\D/g,'') || 0, 10);
+  const dur = 900; 
+  const start = performance.now();
+  requestAnimationFrame(function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const v = Math.round(from + (to - from) * (1 - Math.cos(t * Math.PI)) / 2);
+    el.textContent = v;
+    if (t < 1) requestAnimationFrame(tick);
+  });
+}
+
+function updateCompletedHeaderCounts() {
+  try {
+    const selUser = document.getElementById('userFilter')?.value || 'all';
+    const selType = document.getElementById('typeFilter')?.value || 'all';
+    const date = document.getElementById('filterDate')?.value || '';
+    const selStatus = document.getElementById('statusFilter')?.value || 'all';
+
+    let arr = Object.values(jobs || {});
+
+    // Apply SAME filters as the UI
+    if (selUser !== 'all') arr = arr.filter(j => j.user === selUser);
+    if (selType !== 'all') arr = arr.filter(j => j.type === selType);
+    if (selStatus !== 'all') arr = arr.filter(j => j.status === selStatus);
+    if (date) arr = arr.filter(j => (j.end||j.created_at||'').substring(0,10) === date);
+
+    const pendingCount   = arr.filter(j => j.status === 'pending').length;
+    const queuedCount    = arr.filter(j => j.status === 'queued').length;
+    const completedCount = arr.filter(j => j.status === 'completed').length;
+    const rejectedCount  = arr.filter(j => j.status === 'rejected').length;
+    const errorCount     = arr.filter(j => j.status === 'error').length;
+
+    const totalDone = completedCount + rejectedCount + errorCount;
+
+    // Animate all counters
+    animateCount(document.getElementById('countPending'), pendingCount);
+    animateCount(document.getElementById('countQueued'), queuedCount);
+    animateCount(document.getElementById('countCompleted'), completedCount);
+    animateCount(document.getElementById('countRejected'), rejectedCount);
+    animateCount(document.getElementById('countError'), errorCount);
+
+    // Percent done (completed only)
+    const pct = totalDone ? Math.round((completedCount / totalDone) * 100) : 0;
+    document.getElementById('completedPercent').textContent = totalDone ? (pct + '% ✓') : '—';
+
+  } catch (e) {
+    console.error('updateCompletedHeaderCounts error', e);
+  }
+}
+
+
+
+/* -------------------------
+   Approve / Reject / Logs
+   ------------------------- */
+async function approveJob(id) {
+    if (actionLock) return;               // prevent double approvals
+    actionLock = true;
+    actionJobId = id;
+
+    const approveBtn = event.target;
+    const card = approveBtn.closest('.job-card');
+    const rejectBtn = card.querySelector('.btn-reject');
+
+    // Freeze UI state
+    approveBtn.disabled = true;
+    approveBtn.textContent = "Approving...";
+    if (rejectBtn) rejectBtn.disabled = true;
+    card.style.opacity = 0.5;
+
+    try {
+        const r = await fetch('/approve/' + id, { method: 'POST' });
+        const j = await r.json();
+
+        if (!r.ok || !j.ok) {
+            alert(j.msg || "Approval failed");
+            approveBtn.disabled = false;
+            approveBtn.textContent = "Approve";
+            if (rejectBtn) rejectBtn.disabled = false;
+            card.style.opacity = 1;
+        } else {
+            // Smooth fade-out
+            card.classList.add("fade-out");
+            setTimeout(() => card.remove(), 350);
+        }
+    } finally {
+        // Give backend + polling one second to stabilize
+        setTimeout(() => {
+            actionLock = false;
+            actionJobId = null;
+        }, 1200);
+    }
+}
+
+function openRejectModal(id){if(!isApprover){alert('You are not authorized to reject');return;} pendingRejectJobId=id;document.getElementById('rejectReason').value='';document.getElementById('rejectModal').style.display='flex';}
+function closeRejectModal(){pendingRejectJobId=null;document.getElementById('rejectModal').style.display='none';}
+async function confirmReject() {
+    if (actionLock) return;
+    actionLock = true;
+    actionJobId = pendingRejectJobId;
+
+    const reason = document.getElementById("rejectReason").value.trim();
+    if (!reason) {
+        alert("Please enter a reason");
+        actionLock = false;
+        return;
+    }
+
+    try {
+        const r = await fetch('/reject/' + pendingRejectJobId, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason })
+        });
+        closeRejectModal();
+        fetchJobs(); // refresh
+    } finally {
+        setTimeout(() => {
+            actionLock = false;
+            actionJobId = null;
+        }, 1200);
+    }
+}
+
+async function viewReason(id) {
+  const r = await fetch('/reason/' + id);
+  const j = await r.json();
+  if (!j.ok) {
+    alert(j.msg || 'No reason');
+    return;
+  }
+
+  const box = document.getElementById('showReasonText');
+  const title = document.getElementById('showReasonTitle');
+
+  // REJECTED CASE
+  if (j.status === "rejected") {
+    title.textContent = "Rejection Details";
+
+box.innerHTML = `
+  <div style="text-align:left;">
+    <strong>Rejected By:</strong> ${escapeHtml(j.rejected_by || '(unknown)')}<br>
+
+    <strong>Reason:</strong>
+    ${escapeHtml(j.rejected_reason || '(no reason provided)')}<br>
+
+    <strong>Rejected At:</strong>
+    ${escapeHtml((jobs[id]?.end || jobs[id]?.approved_at || ''))}
+  </div>
+`;
+
+  }
+
+  // ERROR CASE
+  else if (j.status === "error") {
+    title.textContent = "Error Details";
+    box.innerHTML = `<pre>${escapeHtml(j.error_details || '(no error log)')}</pre>`;
+  }
+
+  // DEFAULT
+  else {
+    title.textContent = "No Reason Available";
+    box.textContent = "This job has no rejection or error details.";
+  }
+
+  document.getElementById('showReasonModal').style.display = 'flex';
+}
+
+function closeShowReason(){document.getElementById('showReasonModal').style.display='none';}
+
+/* -------------------------
+   Logs via SSE
+   ------------------------- */
+function startLogStream(id) {
+  // Close any existing streams (all of them) to avoid stale state
+// Only close stream for THIS job, not all jobs
+// --- FIX: Prevent duplicate EventSource streams ---
+if (logStreams[id]) {
+    console.warn("⚠️ Prevented duplicate log stream for job:", id);
+    return;   // <---- IMPORTANT
+}
+
+
+  const box = document.getElementById('logs_' + id);
+  if (!box) return;
+
+  // Create new EventSource
+  const es = new EventSource('/logs/' + id);
+  logStreams[id] = es;
+
+  es.onmessage = (e) => {
+    if (!e.data) return;
+    if (e.data === '__STREAM_END__') {
+      try { es.close(); } catch (e) {}
+      delete logStreams[id];
+      // small delay so UI can settle, then refresh jobs
+      setTimeout(() => fetchJobs(), 120);
+      return;
+    }
+
+    box.textContent += e.data + '\n';
+    box.scrollTop = box.scrollHeight;
+
+    // detect PROGRESS messages
+    const m = e.data.match(/PROGRESS:\s*(\d+)|Progress:\s*(\d+)%/i);
+    if (m) {
+      const pct = parseInt(m[1] || m[2], 10);
+      const prog = document.getElementById('prog_' + id);
+      if (prog) prog.style.width = pct + '%';
+    }
+  };
+
+  es.onerror = (err) => {
+    // close and cleanup on error — will be re-opened when renderRunning runs again
+    try { es.close(); } catch (e) {}
+    delete logStreams[id];
+  };
+}
+
+/* -------------------------
+   Filters population
+   ------------------------- */
+function populateUserFilter(){
+  const sel = document.getElementById('userFilter');
+  const users = [...new Set(Object.values(jobs).map(j=>j.user).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">All Users</option>' + users.map(u=>`<option value="${u}">${u}</option>`).join("");
+  if(users.includes(cur) || cur==="all") sel.value = cur;
+}
+function populateTypeFilter(){
+  const sel = document.getElementById('typeFilter');
+  const types = [...new Set(Object.values(jobs).map(j=>j.type).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">All</option>' + types.map(t=>`<option value="${t}">${t}</option>`).join("");
+  if(types.includes(cur) || cur==="all") sel.value = cur;
+}
+document.getElementById('userFilter').addEventListener('change', () => {
+    pausePollingUntil = Date.now() + 3500;
+    fetchJobs(false);
+});
+document.getElementById('typeFilter').addEventListener('change', () => {
+    pausePollingUntil = Date.now() + 3500;
+    fetchJobs(false);
+});
+document.getElementById('statusFilter').addEventListener('change', () => {
+    pausePollingUntil = Date.now() + 3500;
+    fetchJobs(false);
+});
+
+
+document.getElementById('filterDate').addEventListener('change', () => {
+    pausePollingUntil = Date.now() + 3500;
+    renderCompleted();
+    updateCompletedHeaderCounts();
+});
+
+
+
+// ----- Disable active items UI logic -----
+
+/**
+ * Fetch /jobs and disable checkboxes in the Raise Request modal
+ * for items that already have an active job (pending|queued|running).
+ */
+async function disableActiveItems() {
+  try {
+    const res = await fetch('/jobs');
+    if (!res.ok) return;
+    const jobs = await res.json();
+
+    // Build a set of "type::item" for active jobs (normalize to lowercase)
+    const active = new Set(
+      jobs
+        .filter(j => ['pending', 'queued', 'running'].includes((j.status || '').toLowerCase()))
+        .map(j => `${(j.type||'').toString().trim().toLowerCase()}::${(j.items||'').toString().trim()}`)
+    );
+
+    // For each checkbox inside the modal, find its modal-tab ancestor to get type
+    document.querySelectorAll('#raiseModal input[name="items"]').forEach(cb => {
+      // find the modal tab container (id like modal-<typeLower>)
+      const tab = cb.closest('.modal-tab');
+      let typeKey = '';
+      if (tab && tab.id && tab.id.startsWith('modal-')) {
+        typeKey = tab.id.substring('modal-'.length).toLowerCase();
+      } else {
+        // Fallback: try to infer from radio/form — but we expect modal-tab structure
+        typeKey = cb.closest('form')?.getAttribute('data-type')?.toLowerCase() || '';
+      }
+
+      const itemVal = (cb.value || '').toString().trim();
+      const key = `${typeKey}::${itemVal}`;
+
+      const label = cb.nextElementSibling; // the <label> right after input in template
+
+      if (active.has(key)) {
+        cb.disabled = true;
+        if (label) {
+          label.style.opacity = '0.45';
+          label.style.cursor = 'not-allowed';
+          label.title = 'Request already pending/queued/running — cannot submit again';
+        }
+      } else {
+        cb.disabled = false;
+        if (label) {
+          label.style.opacity = '1';
+          label.style.cursor = 'pointer';
+          label.removeAttribute('title');
+        }
+      }
+    });
+
+    // Update Select All checkboxes state per tab:
+    document.querySelectorAll('.modal-tab').forEach(tab => {
+      const tabId = tab.id || '';
+      const prefix = tabId.replace('modal-', '');
+      const master = document.getElementById(prefix + 'SelectAll');
+      if (!master) return;
+      // If all items in this tab are disabled, disable master select-all
+      const checkboxes = tab.querySelectorAll('input[name="items"]');
+      const enabledCount = Array.from(checkboxes).filter(x => !x.disabled).length;
+      master.disabled = (enabledCount === 0);
+      // Also ensure master checkbox is unchecked if disabled
+      if (master.disabled) master.checked = false;
+    });
+
+    // Update submit buttons: disable if no enabled items in active tab(s)
+    document.querySelectorAll('.modal-tab').forEach(tab => {
+      const submit = tab.querySelector('.submit-btn');
+      if (!submit) return;
+      const enabled = Array.from(tab.querySelectorAll('input[name="items"]')).some(x => !x.disabled);
+      submit.disabled = !enabled;
+      if (!enabled) {
+        // optionally set small text on button
+        submit._origText = submit._origText || submit.textContent;
+        submit.textContent = 'No items available';
+      } else if (submit._origText) {
+        submit.textContent = submit._origText;
+      }
+    });
+
+  } catch (err) {
+    console.error('disableActiveItems error', err);
+  }
+}
+
+/**
+ * Call this to refresh disable state if modal is open.
+ */
+function refreshDisableStateIfModalOpen() {
+  const raiseModal = document.getElementById('raiseModal');
+  if (raiseModal && raiseModal.style.display === 'flex') {
+    disableActiveItems();
+  }
+}
+
+function resetRaiseModal() {
+  // Uncheck all checkboxes
+  document.querySelectorAll('#raiseModal input[type="checkbox"]').forEach(cb => {
+    // Skip disabled ones — just uncheck them
+    cb.checked = false;
+  });
+
+  // Reset Select All checkboxes
+  document.querySelectorAll('#raiseModal input[id$="SelectAll"]').forEach(master => {
+    master.checked = false;
+  });
+
+  // Reset schedule toggle & time
+  const toggle = document.getElementById('scheduleToggle');
+  const dt = document.getElementById('scheduleTime');
+  if (toggle) toggle.checked = false;
+  if (dt) {
+    dt.value = '';
+    dt.style.display = 'none';
+  }
+
+  // Reset schedule state object (the one defined globally)
+  if (typeof scheduleState !== 'undefined') {
+    scheduleState.enabled = false;
+    scheduleState.time = '';
+  }
+
+  // Reset submit buttons text/state
+  document.querySelectorAll('#raiseModal .submit-btn').forEach(btn => {
+    btn.disabled = false;
+    if (btn._origText) btn.textContent = btn._origText;
+  });
+}
+
+
+/* -------------------------
+   Raise Request Modal (replicates user left panel)
+   ------------------------- */
+async function openRaiseModal() {
+  // 🧹 Step 1: Reset everything first
+  resetRaiseModal();
+
+  // 🪟 Step 2: Show modal
+  document.getElementById('raiseModal').style.display = 'flex';
+
+  // ⏱️ Step 3: Wait a tiny moment for DOM to render
+  await new Promise(r => setTimeout(r, 80));
+
+  // 🚫 Step 4: Disable already-active items again
+  await disableActiveItems();
+}
+
+function closeRaiseModal(){ document.getElementById('raiseModal').style.display='none'; }
+
+function switchModalTab(ev, tab){
+  document.querySelectorAll('.tab-button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.modal-tab').forEach(t=>t.style.display='none');
+  ev.target.classList.add('active');
+  document.getElementById('modal-'+tab).style.display='block';
+}
+
+function toggleAllFromModal(section, master){
+  const root = section + 'List';
+  const list = document.getElementById(root);
+  const boxes = list.querySelectorAll('input[name="items"]');
+  if (!master.checked) {
+    // Uncheck everything
+    boxes.forEach(cb => { cb.checked = false; });
+    return;
+  }
+  // Only check boxes that are not disabled
+  boxes.forEach(cb => { if (!cb.disabled) cb.checked = true; });
+}
+
+
+async function handleModalSubmit(e, type) {
+  e.preventDefault();
+
+  const form = e.target;
+
+  // Prevent double submits
+  if (form.dataset.submitting === "true") return false;
+  form.dataset.submitting = "true";
+
+  const submitBtn = form.querySelector(".submit-btn");
+
+  // Disable instantly
+  if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+  }
+
+  // Collect selected items
+  const items = [...form.querySelectorAll('input[name="items"]:checked')].map(x => x.value);
+  if (!items.length) {
+      alert("Please select at least one item.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit";
+      form.dataset.submitting = "false";
+      return false;
+  }
+
+  // ---- CLOSE THE RAISE MODAL IMMEDIATELY ----
+  closeRaiseModal();
+
+  const fd = new FormData();
+  items.forEach(i => fd.append("items", i));
+
+  // Scheduling support
+  let endpoint = "/submit/" + type;
+  if (scheduleState.enabled && scheduleState.time) {
+      fd.append("scheduled_time", scheduleState.time);
+      endpoint = "/submit_scheduled/" + type;
+  }
+
+  try {
+      const r = await fetch(endpoint, { method: "POST", body: fd });
+      const j = await r.json();
+
+      if (r.ok && (j.status === "ok" || j.created)) {
+          const count = j.created || items.length;
+
+          // show success message modal
+          document.getElementById("modalTitle").textContent = "✅ Requests Submitted!";
+          document.getElementById("modalMsg").textContent =
+              count + " request" + (count > 1 ? "s" : "") + " submitted.";
+          document.getElementById("successModal").style.display = "flex";
+
+          setTimeout(fetchJobs, 800);
+      } else {
+          alert("Submit failed: " + (j.error || JSON.stringify(j)));
+      }
+  } catch (err) {
+      console.error(err);
+      alert("Submit failed");
+  } finally {
+      // Always reset for next open
+      form.dataset.submitting = "false";
+      if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit";
+      }
+  }
+
+  return false;
+}
+
+
+
+function closeModal(){ document.getElementById('successModal').style.display='none'; }
+// --- Helper to close both modals when user clicks OK ---
+function closeSuccessAndRaise(){
+  document.getElementById('successModal').style.display = 'none';
+  closeRaiseModal();  // This closes the Raise Request modal too
+}
+
+/* -------------------------
+   Utilities
+   ------------------------- */
+function mapTitle(t){ if(!t) return 'Request'; const s = t.toLowerCase(); if(s.includes('etl')) return 'ETL'; if(s.includes('view')) return 'View Refresh'; if(s.includes('table')) return 'Table Update'; return t; }
+
+/* -------------------------
+   Start
+   ------------------------- */
+document.getElementById('filterDate').value = new Date().toISOString().substring(0,10);
+fetchJobs();
+
+let polling = false;
+async function pollJobs() {
+  // ⛔ If we are in a pause window, skip refreshing
+if (Date.now() < pausePollingUntil) {
+    setTimeout(pollJobs, 800);
+    return;
+}
+
+
+  if (polling) return;
+  polling = true;
+
+  try {
+  await fetchJobs(false);
+} finally {
+  polling = false;
+  setTimeout(pollJobs, 800);
+}
+
+}
+
+pollJobs();
+
+
+/* --- Smooth Running → Completed + 2D FLIP Grid Animation --- */
+
+let lastRunningId = null;
+let prevCompletedIds = [];
+
+function animateGrid(container, renderFn) {
+  const oldRects = {};
+  container.querySelectorAll('.completed-card').forEach(el => {
+    oldRects[el.dataset.id] = el.getBoundingClientRect();
+  });
+
+  renderFn(); // re-render
+
+  const newRects = {};
+  container.querySelectorAll('.completed-card').forEach(el => {
+    newRects[el.dataset.id] = el.getBoundingClientRect();
+  });
+
+  container.querySelectorAll('.completed-card').forEach(el => {
+    const id = el.dataset.id;
+    const old = oldRects[id];
+    const rect = newRects[id];
+    if (!old || !rect) return;
+    const dx = old.left - rect.left;
+    const dy = old.top - rect.top;
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    el.style.transition = 'none';
+    requestAnimationFrame(() => {
+      el.style.transform = '';
+      el.style.transition = 'transform 1s ease, opacity 1s ease';
+    });
+  });
+}
+
+const originalRenderRunning = renderRunning;
+renderRunning = function() {
+  const el = document.getElementById('runningContainer');
+  const arr = Object.values(jobs).filter(j => j.status === 'running');
+if (!arr.length) {
+  el.innerHTML = '';
+  lastRunningId = null;
+  return;
+}
+
+
+  const job = arr[0];
+
+  // ✅ Only rebuild if running job changed
+  if (job.id === lastRunningId) {
+    const prog = document.getElementById('prog_' + job.id);
+    if (prog) prog.style.width = job.progress + '%';
+    return;
+  }
+  lastRunningId = job.id;
+
+  const old = el.querySelector('.running-card');
+  if (old) {
+    old.classList.add('fade-out');
+    setTimeout(() => old.remove(), 350);
+  }
+
+  const accent = accentForType(job.type);
+  const card = document.createElement('div');
+  card.className = 'running-card fade-in';
+  card.style.borderTop = `4px solid ${accent}`;
+  card.innerHTML = `
+    <span class="badge badge-running">RUNNING <div class="spinner" style="margin-left:8px"></div></span>
+    <strong>${escapeHtml(mapTitle(job.type))}</strong>
+    <div class="meta">${escapeHtml(job.items||'')}</div>
+    <div class="meta">👤 ${escapeHtml(job.user)}<br>🕒 ${escapeHtml(job.start || job.approved_at || job.created_at)}
+</div>
+    <div class="progress-track"><div id="prog_${job.id}" class="progress-fill" style="width:${job.progress}%"></div></div>
+    <div id="logs_${job.id}" class="log-area"></div>`;
+  el.appendChild(card);
+  startLogStream(job.id);
+};
+
+const originalRenderCompleted = renderCompleted;
+renderCompleted = function() {
+  const el = document.getElementById('completedContainer');
+  animateGrid(el, () => {
+    const selUser = document.getElementById('userFilter').value;
+    const selType = document.getElementById('typeFilter').value;
+    const date = document.getElementById('filterDate').value;
+    const selStatus = document.getElementById('statusFilter').value;
+
+    let arr = Object.values(jobs).filter(j => ['completed','rejected','error'].includes(j.status));
+    if (selUser !== 'all') arr = arr.filter(j => j.user === selUser);
+    if (selType !== 'all') arr = arr.filter(j => j.type === selType);
+    if (selStatus !== 'all') arr = arr.filter(j => j.status === selStatus);
+    if (date) arr = arr.filter(j => (j.end||j.created_at||'').substring(0,10) === date);
+
+
+
+
+    arr.sort((a,b)=> new Date(b.end||b.created_at||0) - new Date(a.end||a.created_at||0));
+
+    const newIds = arr.map(a => a.id);
+    const newCardIds = newIds.filter(id => !prevCompletedIds.includes(id));
+    prevCompletedIds = newIds;
+
+    el.innerHTML = '';
+    if (!arr.length){
+      el.innerHTML = '<div class="empty">No completed jobs for selected date</div>';
+      return;
+    }
+
+    arr.forEach(j => {
+      const card = document.createElement('div');
+      card.className = 'completed-card';
+      card.dataset.id = j.id;
+      if (newCardIds.includes(j.id)) card.classList.add('fade-in');
+      card.style.borderLeft = `4px solid ${accentForType(j.type)}`;
+      let badgeText = 'COMPLETED', cls = 'badge-completed', btn = '';
+      if (j.status === 'rejected'){ badgeText='REJECTED'; cls='badge-rejected'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>`; }
+      else if (j.status === 'error'){ badgeText='ERROR'; cls='badge-error'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>`; }
+
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="badge ${cls}">${badgeText}</span>${btn}
+        </div>
+        <strong>${escapeHtml(mapTitle(j.type))}</strong>
+        <div class="meta">📦 ${escapeHtml(j.items||'')}</div>
+        <div class="meta">👤 ${escapeHtml(j.display_name || j.user)}</div>
+        <div class="meta">🕒 ${escapeHtml(j.end||j.created_at)}</div>`;
+      el.appendChild(card);
+    });
+  });
+};
+
+
+</script>
+</div></div></div>
+<script>
+// Global schedule state
+let scheduleState = {enabled:false,time:''};
+
+function toggleSchedule(){
+  const toggle=document.getElementById('scheduleToggle');
+  const dt=document.getElementById('scheduleTime');
+  scheduleState.enabled=toggle.checked;
+  if(toggle.checked){
+    dt.style.display='block';
+  }else{
+    dt.style.display='none';
+    scheduleState.time='';
+    dt.value='';
+  }
+}
+
+document.addEventListener('change',e=>{
+  if(e.target.id==='scheduleTime'){
+    scheduleState.time=e.target.value;
+  }
+});
+
+// keep schedule settings when switching tabs
+const origSwitchModalTab = switchModalTab;
+switchModalTab = function(ev,tab){
+  origSwitchModalTab(ev,tab);
+  const toggle=document.getElementById('scheduleToggle');
+  const dt=document.getElementById('scheduleTime');
+  toggle.checked=scheduleState.enabled;
+  dt.value=scheduleState.time;
+  dt.style.display=scheduleState.enabled?'block':'none';
+};
+
+// Extend handleModalSubmit
+const origHandleModalSubmit = handleModalSubmit;
+handleModalSubmit = async function(e, type){
+  e.preventDefault();
+  const items=[...e.target.querySelectorAll('input[name="items"]:checked')].map(x=>x.value);
+  if(!items.length){alert("Please select at least one item.");return false;}
+  const fd=new FormData();
+  items.forEach(i=>fd.append('items',i));
+  let endpoint='/submit/'+type;
+  if(scheduleState.enabled && scheduleState.time){
+    fd.append('scheduled_time',scheduleState.time);
+    endpoint='/submit_scheduled/'+type;
+  }
+  try{
+    const r=await fetch(endpoint,{method:'POST',body:fd});
+    const j=await r.json();
+    if(r.ok&&(j.status==='ok'||j.created)){
+      const count=j.created||items.length;
+      document.getElementById('modalTitle').textContent="✅ Requests Submitted!";
+      document.getElementById('modalMsg').textContent=count+" request"+(count>1?"s":"")+" submitted.";
+      document.getElementById('successModal').style.display='flex';
+      setTimeout(fetchJobs,1000);
+      return false;
+    }else alert("Submit failed: "+(j.error||JSON.stringify(j)));
+  }catch(err){console.error(err);alert("Submit failed");}
+  return false;
+};
+</script>
+
+
+<!-- Scheduled List Modal -->
+<div class="modal" id="scheduledListModal" style="z-index:12000 !important;">
+  <div class="body" style="max-width:640px;">
+    <button class="close-x" onclick="closeScheduledList()">✕</button>
+    <h2>Scheduled Requests</h2>
+    <div id="scheduledListContainer" style="
+      background:#0b0b0b;
+      border:1px solid #222;
+      border-radius:8px;
+      padding:10px;
+      max-height:300px;
+      overflow-y:auto;">
+      <div class="small-muted">Loading scheduled requests...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function openScheduledList() {
+  document.getElementById("scheduledListModal").style.display = "flex";
+  await loadScheduledList();
+}
+
+function closeScheduledList() {
+  document.getElementById("scheduledListModal").style.display = "none";
+}
+
+async function loadScheduledList() {
+  const box = document.getElementById("scheduledListContainer");
+  box.innerHTML = "<div class='small-muted'>Loading...</div>";
+
+  try {
+    const r = await fetch("/scheduled_jobs");
+    const data = await r.json();
+
+    if (!data.length) {
+      box.innerHTML = "<div class='empty'>No scheduled requests</div>";
+      return;
+    }
+
+    box.innerHTML = data
+      .map(j => {
+        let timeStr = j.scheduled_time || "";
+if (timeStr && !timeStr.endsWith("Z") && !timeStr.includes("+")) {
+  timeStr += "Z"; // assume UTC if no timezone given
+}
+const parsed = new Date(timeStr);
+const time = isNaN(parsed.getTime()) ? "(unknown time)" : parsed.toLocaleString();
+
+        return `
+          <div class="request-card" style="margin-bottom:6px;">
+            <strong>${escapeHtml(j.type)}</strong> - ${escapeHtml(j.items)}
+            <div class="meta small-muted">
+              ⏰ Scheduled for: ${escapeHtml(time)}<br>
+              👤 ${escapeHtml(j.display_name || j.user)}
+            </div>
+          </div>`;
+      })
+      .join("");
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = "<div class='empty'>Failed to load scheduled jobs</div>";
+  }
+}
+
+
+
+</script>
+
+
+
+</body>
+</html>
+
+

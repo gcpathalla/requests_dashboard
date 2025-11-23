@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Manage Request Types</title>
+<style>
+
+  * {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  background: #0b0b0b;
+  color: #e6faff;
+  font-family: "Segoe UI", sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+header {
+  background: #151515;
+  border-bottom: 1px solid #222;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+h1 {
+  color: #00e0ff;
+  font-size: 1.2rem;
+  margin: 0;
+}
+button.back-btn {
+  background: linear-gradient(90deg,#00e0ff,#7ef3b8);
+  color: #000;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all .25s ease;
+}
+button.back-btn:hover {
+  box-shadow: 0 0 10px rgba(0,224,255,0.6);
+  transform: translateY(-1px);
+}
+
+/* Main layout */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 30% 2px 1fr;
+  gap: 0;
+  padding: 0px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Glass divider */
+.glass-line {
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(0,224,255,0.2) 0%,
+    rgba(255,255,255,0.25) 50%,
+    rgba(0,224,255,0.2) 100%
+  );
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0,224,255,0.15);
+}
+
+/* Left panel */
+.left-panel {
+  background: rgba(20,20,20,0.9);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  height: fit-content;
+}
+
+label {
+  font-size: 0.9rem;
+  color: #bfc9ce;
+  margin-bottom: 2px;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #111;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border 0.2s ease;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #00e0ff;
+  outline: none;
+  box-shadow: 0 0 6px rgba(0,224,255,0.4);
+}
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+input[type="color"] {
+  width: 60px;
+  height: 34px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+button.save-btn {
+  background: linear-gradient(90deg,#00e0ff,#7ef3b8);
+  color: #000;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all .25s ease;
+  margin-top: 10px;
+}
+button.save-btn:hover {
+  box-shadow: 0 0 10px rgba(0,224,255,0.6);
+}
+
+/* Right panel */
+.right-panel {
+  background: rgba(20,20,20,0.9);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+/* Custom scrollbar */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg,#00e0ff,#7ef3b8);
+  border-radius: 10px;
+}
+.table-container::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th, .table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  text-align: left;
+}
+.table th {
+  background: rgba(27,27,27,0.95);
+  color: #00e0ff;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+.table tr:hover {
+  background: rgba(255,255,255,0.05);
+}
+.color-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  box-shadow: 0 0 4px rgba(0,224,255,0.2);
+}
+
+/* Responsive */
+@media (max-width: 950px) {
+  .main {
+    display: flex;
+    flex-direction: column;
+  }
+  .glass-line {
+    display: none;
+  }
+}
+</style>
+</head>
+<body>
+  <header>
+    <h1>⚙️ Manage Request Types/items</h1>
+    <button class="back-btn" onclick="window.location.href='/requests_dashboard'">⬅ Back</button>
+  </header>
+
+  <div class="main">
+    <div class="left-panel">
+      <label>Type (Select existing or add new):</label>
+      <input list="typeList" id="typeInput" placeholder="e.g. ETL or new type"/>
+      <datalist id="typeList">
+        {% for t in requests_data.keys() %}
+        <option value="{{ t }}">{{ t }}</option>
+        {% endfor %}
+      </datalist>
+
+      <label>New Item Names (comma or newline separated):</label>
+      <textarea id="newItems" placeholder="e.g. SWI, PRL, NAH...."></textarea>
+      <div style="font-size: 0.8rem; color: #999;">💡 Tip: Enter multiple items separated by commas or new lines.</div>
+
+      <label>Color:</label>
+      <input type="color" id="colorPicker" value="#00e0ff"/>
+
+      <button id="saveBtn" class="save-btn">💾 Save</button>
+    </div>
+
+    <div class="glass-line"></div>
+
+    <div class="right-panel">
+      <div class="table-container">
+
+<table class="table" id="typeTable">
+<thead>
+<tr>
+  <th>Type</th>
+  <th>Item</th>
+  <th>Color</th>
+  <th style="text-align:center;">Delete</th>
+</tr>
+</thead>
+<tbody>
+  {% for t, items in requests_data.items() %}
+    {% for i in items %}
+    <tr>
+      <td>{{ t }}</td>
+      <td>{{ i }}</td>
+      <td>
+        <div class="color-box" style="background:{{ colors[t] if t in colors else '#00e0ff' }}"></div>
+      </td>
+      <td style="text-align:center;">
+        <button class="delete-btn"
+                data-type="{{ t }}"
+                data-item="{{ i }}"
+                title="Delete this item"
+                style="
+                  background:none;
+                  border:none;
+                  color:#ff6666;
+                  cursor:pointer;
+                  font-size:1.2rem;">
+          🗑️
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+</tbody>
+</table>
+
+      </div>
+    </div>
+  </div>
+
+<!-- CONFIRMATION MODAL -->
+<div id="confirmModal"
+     style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;
+            background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:2000;">
+  <div style="background:#111;padding:20px;border-radius:12px;max-width:420px;">
+    <h3 id="confirmTitle">Confirm delete</h3>
+    <p id="confirmText">Are you sure?</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;">
+      <button id="confirmNo" class="save-btn" style="background:#333;color:#fff;">Cancel</button>
+      <button id="confirmYes" class="save-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div id="successModal"
+     style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;
+            background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:2000;">
+  <div style="background:#111;padding:20px;border-radius:12px;max-width:420px;text-align:center;">
+    <h3 id="successTitle">Success</h3>
+    <p id="successText"></p>
+    <button onclick="closeSuccess()" class="save-btn">OK</button>
+  </div>
+</div>
+
+<script>
+const colorPicker = document.getElementById("colorPicker");
+const typeInput = document.getElementById("typeInput");
+const saveBtn = document.getElementById("saveBtn");
+const typeColors = {{ colors | tojson | safe }};
+
+// Auto color fill
+typeInput.addEventListener("input", () => {
+  const t = typeInput.value.trim();
+  if (t && typeColors[t]) {
+    colorPicker.value = typeColors[t];
+  }
+});
+
+// SUCCESS modal
+function showSuccess(msg) {
+  document.getElementById("successText").textContent = msg;
+  document.getElementById("successModal").style.display = "flex";
+}
+function closeSuccess() {
+  document.getElementById("successModal").style.display = "none";
+  window.location.reload();
+}
+
+// SAVE → Excel
+saveBtn.addEventListener("click", async () => {
+  const type = typeInput.value.trim();
+  const rawItems = document.getElementById("newItems").value.trim();
+  const color = colorPicker.value;
+
+  if (!type || !rawItems) {
+    alert("Please provide a type and at least one item.");
+    return;
+  }
+
+  const items = rawItems.split(/[\n,]+/).map(i => i.trim()).filter(i => i);
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
+
+  try {
+    const res = await fetch("/add_db_type", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, items, color })
+    });
+    const j = await res.json();
+
+    if (res.ok && j.ok) {
+      showSuccess(j.added + " item(s) saved successfully!");
+    } else {
+      alert("Save failed: " + (j.msg || JSON.stringify(j)));
+    }
+  } catch (err) {
+    alert("Save failed");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "💾 Save";
+  }
+});
+
+// DELETE logic
+let pendingDelete = null;
+
+function openConfirm(type, item) {
+  pendingDelete = { type, item };
+  document.getElementById("confirmTitle").textContent = `Delete ${type}-${item}?`;
+  document.getElementById("confirmText").textContent =
+    `Are you sure you want to delete "${type}-${item}" ?`;
+  document.getElementById("confirmModal").style.display = "flex";
+}
+
+function closeConfirm() {
+  pendingDelete = null;
+  document.getElementById("confirmModal").style.display = "none";
+}
+
+document.getElementById("confirmNo").addEventListener("click", closeConfirm);
+
+document.getElementById("confirmYes").addEventListener("click", async () => {
+  if (!pendingDelete) return closeConfirm();
+
+  const { type, item } = pendingDelete;
+
+  try {
+    const res = await fetch("/delete_db_type", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, item })
+    });
+    const j = await res.json();
+
+    if (res.ok && j.ok) {
+      closeConfirm();
+      showSuccess("Deleted successfully.");
+    } else {
+      alert("Delete failed: " + (j.msg || JSON.stringify(j)));
+    }
+  } catch (err) {
+    alert("Delete failed");
+  }
+});
+
+document.querySelectorAll(".delete-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const t = btn.getAttribute("data-type");
+    const i = btn.getAttribute("data-item");
+    openConfirm(t, i);
+  });
+});
+</script>
+</body>
+</html>
