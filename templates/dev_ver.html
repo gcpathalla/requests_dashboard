@@ -30,17 +30,17 @@
 }
 
 [data-theme="light"] {
-  /* Light Theme */
-  --bg:#FFFFFF;
-  --panel:#F7F7F8;
-  --mepanel:#F7F7F8;
+  /* Minimalistic Light Theme - Clean & Elegant */
+  --bg:#FAFAFA;
+  --panel:#FFFFFF;
+  --mepanel:#FFFFFF;
   --card:#FFFFFF;
-  --accent-text:#0D0D0D;
-  --text-muted:#6E6E80;
-  --border:#E5E5E5;
-  --shadow:rgba(0,0,0,0.08);
+  --accent-text:#1A1A1A;
+  --text-muted:#737373;
+  --border:#E0E0E0;
+  --shadow:rgba(0,0,0,0.04);
   --accent:#10A37F;
-  --accent2:#19C37D;
+  --accent2:#0D8A6A;
 }
 
 *{box-sizing:border-box}
@@ -104,26 +104,132 @@ textarea{width:100%;height:120px;background:#0b0b0b;color:var(--accent-text);bor
 .small{font-size:0.9rem;color:var(--muted)}
 .header-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .top-controls{display:flex;gap:8px;align-items:center}
-/* Multi-select styling */
-.filter-select{
-  background:var(--card);
-  color:var(--accent-text);
-  border:1px solid var(--border);
-  padding:6px 8px;
-  border-radius:8px;
-  transition:all 0.2s ease;
-  min-width:120px;
-  max-height:120px;
+/* Custom Dropdown with Checkboxes */
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  min-width: 140px;
 }
-.filter-select:focus {
-  outline:none;
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(16, 163, 127, 0.1);
+
+.dropdown-toggle {
+  background: var(--card);
+  color: var(--accent-text);
+  border: 1px solid var(--border);
+  padding: 8px 32px 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.filter-select option {
-  padding:6px;
-  border-radius:4px;
-  margin:2px 0;
+
+.dropdown-toggle:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.dropdown-toggle::after {
+  content: '▼';
+  position: absolute;
+  right: 10px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.dropdown-toggle.open::after {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px var(--shadow);
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  padding: 8px;
+}
+
+.dropdown-menu.open {
+  display: block;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.dropdown-item:hover {
+  background: var(--panel);
+}
+
+.dropdown-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.dropdown-item label {
+  cursor: pointer;
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--accent-text);
+}
+
+.dropdown-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dropdown-item.disabled:hover {
+  background: transparent;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+}
+
+.dropdown-item.select-all {
+  font-weight: 600;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  padding-bottom: 10px;
 }
 
 /* Theme Toggle */
@@ -503,21 +609,31 @@ window.addEventListener('error', e => {
 ">
   ♻️
 </button>
-<label class="small-muted">Status</label>
-<select class="filter-select" id="statusFilter" multiple size="4">
-  <option value="completed" selected>Completed</option>
-  <option value="pending" selected>Pending</option>
-  <option value="queued" selected>Queued</option>
-  <option value="running" selected>Running</option>
-  <option value="rejected" selected>Rejected</option>
-  <option value="error" selected>Error</option>
-  <option value="killed" selected>Killed</option>
-</select>
 
-<label class="small-muted">User</label>
-<select class="filter-select" id="userFilter" multiple size="4"></select>
-<label class="small-muted">Type</label>
-<select class="filter-select" id="typeFilter" multiple size="4"></select>
+<!-- Status Dropdown -->
+<div class="custom-dropdown">
+  <div class="dropdown-toggle" id="statusDropdownToggle" onclick="toggleDropdown('status')">
+    <span id="statusLabel">All Status</span>
+  </div>
+  <div class="dropdown-menu" id="statusDropdown"></div>
+</div>
+
+<!-- User Dropdown -->
+<div class="custom-dropdown">
+  <div class="dropdown-toggle" id="userDropdownToggle" onclick="toggleDropdown('user')">
+    <span id="userLabel">All Users</span>
+  </div>
+  <div class="dropdown-menu" id="userDropdown"></div>
+</div>
+
+<!-- Type Dropdown -->
+<div class="custom-dropdown">
+  <div class="dropdown-toggle" id="typeDropdownToggle" onclick="toggleDropdown('type')">
+    <span id="typeLabel">All Types</span>
+  </div>
+  <div class="dropdown-menu" id="typeDropdown"></div>
+</div>
+
 <label class="small-muted">Date</label>
 <input id="filterDate" type="date"/>
 
@@ -833,6 +949,7 @@ async function fetchJobs(fullRefresh = true){
       selectedTypes = [...new Set(data.map(j=>j.type).filter(Boolean))];
     }
 
+    populateStatusFilter();
     populateUserFilter();
     populateTypeFilter();
 
@@ -1299,10 +1416,77 @@ if (logStreams[id]) {
 }
 
 /* -------------------------
+   Custom Dropdown Management
+   ------------------------- */
+function toggleDropdown(type) {
+  const dropdown = document.getElementById(`${type}Dropdown`);
+  const toggle = document.getElementById(`${type}DropdownToggle`);
+
+  // Close all other dropdowns
+  document.querySelectorAll('.dropdown-menu').forEach(d => {
+    if (d.id !== `${type}Dropdown`) {
+      d.classList.remove('open');
+    }
+  });
+  document.querySelectorAll('.dropdown-toggle').forEach(t => {
+    if (t.id !== `${type}DropdownToggle`) {
+      t.classList.remove('open');
+    }
+  });
+
+  dropdown.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.custom-dropdown')) {
+    document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.dropdown-toggle').forEach(t => t.classList.remove('open'));
+  }
+});
+
+function updateDropdownLabel(type, selectedItems, allItems) {
+  const label = document.getElementById(`${type}Label`);
+  if (selectedItems.length === 0 || selectedItems.length === allItems.length) {
+    label.textContent = `All ${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'status' ? '' : 's'}`;
+  } else if (selectedItems.length === 1) {
+    label.textContent = selectedItems[0].charAt(0).toUpperCase() + selectedItems[0].slice(0, 15);
+  } else {
+    label.textContent = `${selectedItems.length} selected`;
+  }
+}
+
+/* -------------------------
    Filters population with cross-filtering
    ------------------------- */
+function populateStatusFilter() {
+  const dropdown = document.getElementById('statusDropdown');
+  const allStatuses = ['pending', 'queued', 'running', 'completed', 'rejected', 'error', 'killed'];
+
+  let html = `
+    <div class="dropdown-item select-all" onclick="toggleAllStatus()">
+      <input type="checkbox" id="selectAllStatus" ${selectedStatuses.length === allStatuses.length ? 'checked' : ''}>
+      <label for="selectAllStatus">Select All</label>
+    </div>
+  `;
+
+  allStatuses.forEach(status => {
+    const isChecked = selectedStatuses.includes(status);
+    html += `
+      <div class="dropdown-item" onclick="toggleStatus('${status}', event)">
+        <input type="checkbox" id="status_${status}" ${isChecked ? 'checked' : ''}>
+        <label for="status_${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</label>
+      </div>
+    `;
+  });
+
+  dropdown.innerHTML = html;
+  updateDropdownLabel('status', selectedStatuses, allStatuses);
+}
+
 function populateUserFilter(){
-  const sel = document.getElementById('userFilter');
+  const dropdown = document.getElementById('userDropdown');
   const allUsers = [...new Set(Object.values(jobs).map(j=>j.user).filter(Boolean))].sort();
 
   // Find available users based on selected types and statuses
@@ -1313,15 +1497,33 @@ function populateUserFilter(){
       .map(j => j.user)
   )].sort();
 
-  sel.innerHTML = allUsers.map(u => {
+  let html = `
+    <div class="dropdown-item select-all" onclick="toggleAllUsers()">
+      <input type="checkbox" id="selectAllUsers" ${selectedUsers.length === allUsers.length ? 'checked' : ''}>
+      <label for="selectAllUsers">Select All</label>
+    </div>
+  `;
+
+  allUsers.forEach(u => {
     const isAvailable = availableUsers.includes(u);
-    const isSelected = selectedUsers.includes(u);
-    return `<option value='${u}' ${isSelected ? 'selected' : ''} ${!isAvailable ? 'disabled' : ''}>${u}${!isAvailable ? ' (no data)' : ''}</option>`;
-  }).join('');
+    const isChecked = selectedUsers.includes(u);
+    const disabledClass = !isAvailable ? 'disabled' : '';
+    const disabledAttr = !isAvailable ? 'disabled' : '';
+
+    html += `
+      <div class="dropdown-item ${disabledClass}" onclick="${isAvailable ? `toggleUser('${u}', event)` : ''}">
+        <input type="checkbox" id="user_${u}" ${isChecked ? 'checked' : ''} ${disabledAttr}>
+        <label for="user_${u}">${u}${!isAvailable ? ' (no data)' : ''}</label>
+      </div>
+    `;
+  });
+
+  dropdown.innerHTML = html;
+  updateDropdownLabel('user', selectedUsers, allUsers);
 }
 
 function populateTypeFilter(){
-  const sel = document.getElementById('typeFilter');
+  const dropdown = document.getElementById('typeDropdown');
   const allTypes = [...new Set(Object.values(jobs).map(j=>j.type).filter(Boolean))].sort();
 
   // Find available types based on selected users and statuses
@@ -1332,52 +1534,143 @@ function populateTypeFilter(){
       .map(j => j.type)
   )].sort();
 
-  sel.innerHTML = allTypes.map(t => {
+  let html = `
+    <div class="dropdown-item select-all" onclick="toggleAllTypes()">
+      <input type="checkbox" id="selectAllTypes" ${selectedTypes.length === allTypes.length ? 'checked' : ''}>
+      <label for="selectAllTypes">Select All</label>
+    </div>
+  `;
+
+  allTypes.forEach(t => {
     const isAvailable = availableTypes.includes(t);
-    const isSelected = selectedTypes.includes(t);
-    return `<option value='${t}' ${isSelected ? 'selected' : ''} ${!isAvailable ? 'disabled' : ''}>${t}${!isAvailable ? ' (no data)' : ''}</option>`;
-  }).join('');
+    const isChecked = selectedTypes.includes(t);
+    const disabledClass = !isAvailable ? 'disabled' : '';
+    const disabledAttr = !isAvailable ? 'disabled' : '';
+
+    html += `
+      <div class="dropdown-item ${disabledClass}" onclick="${isAvailable ? `toggleType('${t}', event)` : ''}">
+        <input type="checkbox" id="type_${t}" ${isChecked ? 'checked' : ''} ${disabledAttr}>
+        <label for="type_${t}">${t}${!isAvailable ? ' (no data)' : ''}</label>
+      </div>
+    `;
+  });
+
+  dropdown.innerHTML = html;
+  updateDropdownLabel('type', selectedTypes, allTypes);
 }
 
-// Dynamic cross-filter: when users change, update available types
-document.getElementById('userFilter').addEventListener('change', () => {
-    const userList = document.getElementById('userFilter');
-    selectedUsers = Array.from(userList.selectedOptions).map(o => o.value);
-    populateTypeFilter();
-    pausePollingUntil = Date.now() + 3500;
-    renderPending();
-    renderQueued();
-    renderRunning();
-    renderCompleted();
-    updateCompletedHeaderCounts();
-});
+/* -------------------------
+   Checkbox Toggle Functions
+   ------------------------- */
+function toggleStatus(status, event) {
+  event.stopPropagation();
+  const checkbox = document.getElementById(`status_${status}`);
+  checkbox.checked = !checkbox.checked;
 
-// Dynamic cross-filter: when types change, update available users
-document.getElementById('typeFilter').addEventListener('change', () => {
-    const typeList = document.getElementById('typeFilter');
-    selectedTypes = Array.from(typeList.selectedOptions).map(o => o.value);
-    populateUserFilter();
-    pausePollingUntil = Date.now() + 3500;
-    renderPending();
-    renderQueued();
-    renderRunning();
-    renderCompleted();
-    updateCompletedHeaderCounts();
-});
+  if (checkbox.checked) {
+    if (!selectedStatuses.includes(status)) selectedStatuses.push(status);
+  } else {
+    selectedStatuses = selectedStatuses.filter(s => s !== status);
+  }
 
-// Status filter
-document.getElementById('statusFilter').addEventListener('change', () => {
-    const statusList = document.getElementById('statusFilter');
-    selectedStatuses = Array.from(statusList.selectedOptions).map(o => o.value);
-    populateUserFilter();
-    populateTypeFilter();
-    pausePollingUntil = Date.now() + 3500;
-    renderPending();
-    renderQueued();
-    renderRunning();
-    renderCompleted();
-    updateCompletedHeaderCounts();
-});
+  populateStatusFilter();
+  populateUserFilter();
+  populateTypeFilter();
+  applyFilters();
+}
+
+function toggleAllStatus() {
+  event.stopPropagation();
+  const allStatuses = ['pending', 'queued', 'running', 'completed', 'rejected', 'error', 'killed'];
+  const checkbox = document.getElementById('selectAllStatus');
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    selectedStatuses = [...allStatuses];
+  } else {
+    selectedStatuses = [];
+  }
+
+  populateStatusFilter();
+  populateUserFilter();
+  populateTypeFilter();
+  applyFilters();
+}
+
+function toggleUser(user, event) {
+  event.stopPropagation();
+  const checkbox = document.getElementById(`user_${user}`);
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    if (!selectedUsers.includes(user)) selectedUsers.push(user);
+  } else {
+    selectedUsers = selectedUsers.filter(u => u !== user);
+  }
+
+  populateUserFilter();
+  populateTypeFilter();
+  applyFilters();
+}
+
+function toggleAllUsers() {
+  event.stopPropagation();
+  const allUsers = [...new Set(Object.values(jobs).map(j=>j.user).filter(Boolean))];
+  const checkbox = document.getElementById('selectAllUsers');
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    selectedUsers = [...allUsers];
+  } else {
+    selectedUsers = [];
+  }
+
+  populateUserFilter();
+  populateTypeFilter();
+  applyFilters();
+}
+
+function toggleType(type, event) {
+  event.stopPropagation();
+  const checkbox = document.getElementById(`type_${type}`);
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    if (!selectedTypes.includes(type)) selectedTypes.push(type);
+  } else {
+    selectedTypes = selectedTypes.filter(t => t !== type);
+  }
+
+  populateTypeFilter();
+  populateUserFilter();
+  applyFilters();
+}
+
+function toggleAllTypes() {
+  event.stopPropagation();
+  const allTypes = [...new Set(Object.values(jobs).map(j=>j.type).filter(Boolean))];
+  const checkbox = document.getElementById('selectAllTypes');
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    selectedTypes = [...allTypes];
+  } else {
+    selectedTypes = [];
+  }
+
+  populateTypeFilter();
+  populateUserFilter();
+  applyFilters();
+}
+
+function applyFilters() {
+  pausePollingUntil = Date.now() + 3500;
+  renderPending();
+  renderQueued();
+  renderRunning();
+  renderCompleted();
+  updateCompletedHeaderCounts();
+}
 
 
 document.getElementById('filterDate').addEventListener('change', () => {
