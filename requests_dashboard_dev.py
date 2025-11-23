@@ -248,9 +248,9 @@ def reason(jid):
             if status == "error":
                 # you can keep last logs or use an error_message column if you add one
                 cur.execute("""
-                    SELECT line FROM job_logs 
-                    WHERE job_id=%s 
-                    ORDER BY log_id DESC 
+                    SELECT line FROM job_logs
+                    WHERE job_id=%s
+                    ORDER BY log_id DESC
                     LIMIT 10
                 """, (jid,))
                 lines = [r["line"] for r in cur.fetchall()]
@@ -264,6 +264,80 @@ def reason(jid):
 
     finally:
         conn.close()
+
+# ------------------------------------------------------------------
+# Kill running job endpoint
+# ------------------------------------------------------------------
+@app.route("/kill/<jid>", methods=["POST"])
+def kill_job(jid):
+    if session.get("role","").strip().lower() != "approver":
+        return jsonify({"ok": False, "msg":"Forbidden"}), 403
+
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            # Check if job is running
+            cur.execute("SELECT status FROM jobs WHERE id=%s", (jid,))
+            row = cur.fetchone()
+
+            if not row:
+                return jsonify({"ok": False, "msg": "Job not found"}), 404
+
+            if row.get("status") != "running":
+                return jsonify({"ok": False, "msg": "Job is not running"}), 400
+
+            # Mark job as error (killed)
+            end = datetime.now()
+            cur.execute(
+                'UPDATE jobs SET status=%s, end_time=%s WHERE id=%s',
+                ("error", end, jid)
+            )
+            cur.execute('INSERT INTO job_logs (job_id, line) VALUES (%s,%s)',
+                       (jid, f"[{end.strftime('%H:%M:%S')}] Job killed by {session.get('username')}"))
+    finally:
+        conn.close()
+
+    return jsonify({"ok": True})
+
+# ------------------------------------------------------------------
+# Re-submit job endpoint (for rejected/error jobs)
+# ------------------------------------------------------------------
+@app.route("/resubmit/<jid>", methods=["POST"])
+def resubmit_job(jid):
+    if not session.get("logged_in"):
+        return jsonify({"error":"Not authenticated"}), 403
+
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            # Get original job details
+            cur.execute("SELECT * FROM jobs WHERE id=%s", (jid,))
+            original = cur.fetchone()
+
+            if not original:
+                return jsonify({"ok": False, "msg": "Job not found"}), 404
+
+            # Only allow re-submit for rejected/error jobs
+            if original.get("status") not in ["rejected", "error"]:
+                return jsonify({"ok": False, "msg": "Job is not rejected or error"}), 400
+
+            # Create new job with same details
+            new_jid = generate_job_id()
+            created_at = datetime.now()
+            filename = f"{new_jid}.db"
+
+            cur.execute(
+                'INSERT INTO jobs (id, filename, user, display_name, type, items, status, progress, created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                (new_jid, filename, session.get("username"), session.get("display_name"),
+                 original.get("type"), original.get("items"), "pending", 0, created_at)
+            )
+
+    finally:
+        conn.close()
+
+    async_notify_teams(event="request_raised", user=session.get("username"),
+                      type_=original.get("type"), items=[original.get("items")], status="pending")
+    return jsonify({"ok": True, "new_id": new_jid})
 
 @app.route("/logs/<jid>")
 def stream_logs(jid):

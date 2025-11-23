@@ -3,329 +3,757 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Requests Analytics — Final Layout</title>
+<title>Requests Analytics Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
 <style>
+/* ChatGPT-inspired Light & Dark Theme */
 :root {
-  --bg:#0b0b0b;
-  --panel:#141414;
-  --accent:#00e0ff;
-  --accent2:#7ef3b8;
-  --muted:#bfc9ce;
+  /* Light Theme */
+  --bg: #FFFFFF;
+  --panel: #F7F7F8;
+  --card: #FFFFFF;
+  --text: #0D0D0D;
+  --text-muted: #6E6E80;
+  --border: #E5E5E5;
+  --accent: #10A37F;
+  --accent2: #19C37D;
+  --shadow: rgba(0,0,0,0.08);
+  --overlay: rgba(0,0,0,0.05);
 }
+
+[data-theme="dark"] {
+  /* Dark Theme */
+  --bg: #0D0D0D;
+  --panel: #171717;
+  --card: #2F2F2F;
+  --text: #ECECEC;
+  --text-muted: #C5C5D2;
+  --border: #565869;
+  --accent: #19C37D;
+  --accent2: #10A37F;
+  --shadow: rgba(0,0,0,0.5);
+  --overlay: rgba(255,255,255,0.03);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
-  margin:0;
-  background:var(--bg);
-  color:#e6faff;
-  font-family:"Segoe UI",sans-serif;
-  height:100vh;
-  display:flex;
-  overflow:hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", -apple-system, sans-serif;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* --- Sidebar --- */
+/* Sidebar */
 .sidebar {
-  flex:0 0 20%;
-  background:#121212;
-  border-right:1px solid #1e1e1e;
-  display:flex;
-  flex-direction:column;
-  padding:10px 12px;
-  overflow-y:auto;
+  flex: 0 0 20%;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow-y: auto;
+  transition: background 0.3s ease;
 }
+
 .sidebar h2 {
-  font-size:1rem;
-  color:var(--accent);
-  margin:10px 0 6px;
-  border-bottom:1px solid #222;
-  padding-bottom:4px;
+  font-size: 1rem;
+  color: var(--accent);
+  margin: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  transition: color 0.3s ease;
 }
-.checkbox-list {
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  margin-top:6px;
+
+/* Multi-select styling */
+.multi-select {
+  width: 100%;
+  min-height: 120px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--text);
+  font-family: inherit;
+  transition: all 0.2s ease;
+  margin-top: 8px;
 }
-.checkbox-item {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  cursor:pointer;
-  background:#0e0e0e;
-  border:1px solid #1c1c1c;
-  border-radius:6px;
-  padding:6px 8px;
-  transition:all .2s;
+
+.multi-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
 }
-.checkbox-item:hover { background:#1a1a1a; }
-.checkbox-item input[type="checkbox"] {
-  accent-color:var(--accent);
-  width:16px; height:16px;
+
+.multi-select option {
+  padding: 6px;
+  border-radius: 4px;
+  margin: 2px 0;
 }
+
 .select-all {
-  color:#bbb;
-  font-size:0.85rem;
-  margin-top:4px;
-  cursor:pointer;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: inline-block;
 }
+
+.select-all:hover {
+  background: var(--overlay);
+  color: var(--accent);
+}
+
 .sidebar::-webkit-scrollbar {
-  width:8px;
+  width: 8px;
 }
+
 .sidebar::-webkit-scrollbar-thumb {
-  background:linear-gradient(180deg,var(--accent),var(--accent2));
-  border-radius:10px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  border-radius: 10px;
 }
 
-/* --- Main Layout --- */
+/* Main Layout */
 .main {
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-header {
-  background:#151515;
-  border-bottom:1px solid #222;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:8px 16px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.4);
-}
-h1 {
-  margin:0;
-  font-size:1.1rem;
-  color:var(--accent);
-}
-.date-picker {
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.date-picker input[type="date"] {
-  background:#111;
-  border:1px solid #333;
-  color:#fff;
-  border-radius:8px;
-  padding:5px 10px;
-}
-button.fancy-back {
-  background:linear-gradient(90deg,#00e0ff,#7ef3b8);
-  color:#000;
-  font-weight:600;
-  border:none;
-  border-radius:8px;
-  padding:6px 14px;
-  cursor:pointer;
-  transition:all 0.25s ease;
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-button.fancy-back:hover {
-  box-shadow:0 0 10px rgba(0,224,255,0.6);
-  transform:translateY(-1px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* --- Dashboard Grid --- */
+header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: all 0.3s ease;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--accent);
+  transition: color 0.3s ease;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-picker input[type="date"] {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+}
+
+.date-picker input[type="date"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+button.fancy-back {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button.fancy-back:hover {
+  box-shadow: 0 4px 16px rgba(16, 163, 127, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Dashboard Grid */
 .dashboard {
-  flex:1;
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   grid-template-areas:
     "timeChart timeChart timeChart"
     "barChart donutChart pieChart";
-  gap:16px;
-  padding:16px;
-  overflow:auto;
+  gap: 20px;
+  padding: 20px;
+  overflow: auto;
 }
+
 .dashboard::-webkit-scrollbar {
-  width:8px;
+  width: 8px;
 }
+
 .dashboard::-webkit-scrollbar-thumb {
-  background:linear-gradient(180deg,var(--accent),var(--accent2));
-  border-radius:8px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  border-radius: 8px;
 }
 
-/* --- Cards --- */
+/* Skeleton Loading */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--overlay) 0%,
+    var(--border) 50%,
+    var(--overlay) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 12px;
+}
+
+.card.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.card.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--overlay) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  z-index: 1;
+}
+
+/* Cards */
 .card {
-  background:var(--panel);
-  border:1px solid #1f1f1f;
-  border-radius:12px;
-  padding:14px;
-  box-shadow:0 4px 14px rgba(0,0,0,0.5);
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  min-height:280px;
-}
-.card h3 {
-  margin:0;
-  font-size:1rem;
-  color:var(--accent);
-}
-.chart-wrap {
-  flex:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:240px;
-  overflow:hidden;
-}
-canvas {
-  max-width:100%!important;
-  max-height:240px!important;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 300px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-/* --- Grid Area Assignments --- */
+.card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--accent);
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.chart-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  overflow: hidden;
+}
+
+canvas {
+  max-width: 100% !important;
+  max-height: 240px !important;
+}
+
+/* Grid Area Assignments */
 #timeCard { grid-area: timeChart; }
 #barCard { grid-area: barChart; }
 #donutCard { grid-area: donutChart; }
 #pieCard { grid-area: pieChart; }
 
-.fade-slow {
-  animation:fadeSlow 1.2s ease forwards;
-  opacity:0;
-  transform:translateY(8px);
+/* Staggered animation */
+.card:nth-child(1) { animation-delay: 0ms; }
+.card:nth-child(2) { animation-delay: 100ms; }
+.card:nth-child(3) { animation-delay: 200ms; }
+.card:nth-child(4) { animation-delay: 300ms; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-@keyframes fadeSlow { to { opacity:1; transform:translateY(0); } }
+
+.card.animate {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Auto-refresh indicator */
+.refresh-indicator {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px var(--shadow);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.refresh-indicator.show {
+  opacity: 1;
+  transform: translateY(0);
+}
 </style>
 </head>
-<body>
+<body data-theme="dark">
+
 <div class="sidebar">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 style="margin-top: 0; border: none;">Filters</h2>
+    <span class="select-all" onclick="clearAllFilters()">Clear All</span>
+  </div>
+
   <h2>Users</h2>
   <div class="select-all" id="selectAllUsers">☑ Select All Users</div>
-  <div class="checkbox-list" id="userList"></div>
+  <select class="multi-select" id="userList" multiple size="8"></select>
 
   <h2>Request Types</h2>
   <div class="select-all" id="selectAllTypes">☑ Select All Types</div>
-  <div class="checkbox-list" id="typeList"></div>
+  <select class="multi-select" id="typeList" multiple size="8"></select>
 </div>
 
 <div class="main">
   <header>
     <h1>📊 Requests Analytics Dashboard</h1>
-    <div class="date-picker">
-      <label style="color:#ccc;font-size:0.85rem;">Date:</label>
-      <input type="date" id="filterDate" />
+    <div class="header-controls">
+      <div class="date-picker">
+        <label style="color: var(--text-muted); font-size: 0.85rem;">Date:</label>
+        <input type="date" id="filterDate" />
+      </div>
+      <div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span id="themeIcon">🌙</span>
+      </div>
       <button class="fancy-back" onclick="window.location.href='/requests_dashboard'">⬅ Back</button>
     </div>
   </header>
 
   <div class="dashboard">
-    <div class="card fade-slow" id="timeCard">
+    <div class="card animate" id="timeCard">
       <h3>Completed Over Time</h3>
       <div class="chart-wrap"><canvas id="timeChart"></canvas></div>
     </div>
-    <div class="card fade-slow" id="barCard">
+    <div class="card animate" id="barCard">
       <h3>Main Job Status</h3>
       <div class="chart-wrap"><canvas id="barChart"></canvas></div>
     </div>
-    <div class="card fade-slow" id="donutCard">
-      <h3>Completed by Type (Donut)</h3>
+    <div class="card animate" id="donutCard">
+      <h3>Completed by Type</h3>
       <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
     </div>
-    <div class="card fade-slow" id="pieCard">
-      <h3>Completed by User (Pie)</h3>
+    <div class="card animate" id="pieCard">
+      <h3>Completed by User</h3>
       <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
     </div>
   </div>
 </div>
 
+<div class="refresh-indicator" id="refreshIndicator">
+  🔄 Refreshing data...
+</div>
+
 <script>
-let jobs=[], selectedUsers=[], selectedTypes=[], allDates=[];
+let jobs = [], selectedUsers = [], selectedTypes = [], allDates = [];
 let barChart, donutChart, pieChart, timeChart;
-const slowAnim={duration:2500,easing:'easeOutCubic'};
+let currentTheme = localStorage.getItem('theme') || 'dark';
+const smoothAnim = { duration: 800, easing: 'easeInOutCubic' };
 
-async function loadJobs(){
-  const res=await fetch('/jobs');
-  jobs=await res.json();
-  allDates=[...new Set(jobs.map(j=>(j.end||j.created_at||'').substring(0,10)).filter(Boolean))].sort();
+// Theme Management
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', currentTheme);
+  localStorage.setItem('theme', currentTheme);
+  document.getElementById('themeIcon').textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+  // Update charts with new theme colors
+  setTimeout(() => {
+    renderAll();
+  }, 100);
+}
+
+// Initialize theme
+document.body.setAttribute('data-theme', currentTheme);
+document.getElementById('themeIcon').textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+// Data Loading with visual feedback
+async function loadJobs() {
+  showRefreshIndicator();
+  const res = await fetch('/jobs');
+  jobs = await res.json();
+  allDates = [...new Set(jobs.map(j => (j.end || j.created_at || '').substring(0, 10)).filter(Boolean))].sort();
   populateSidebar();
+
+  // Stagger card animations
+  setTimeout(() => {
+    document.querySelectorAll('.card').forEach((card, i) => {
+      setTimeout(() => card.classList.add('visible'), i * 100);
+    });
+  }, 50);
+
+  renderAll();
+  hideRefreshIndicator();
+}
+
+function showRefreshIndicator() {
+  document.getElementById('refreshIndicator').classList.add('show');
+}
+
+function hideRefreshIndicator() {
+  setTimeout(() => {
+    document.getElementById('refreshIndicator').classList.remove('show');
+  }, 500);
+}
+
+function populateSidebar() {
+  const users = [...new Set(jobs.map(j => j.user))].sort();
+  const types = [...new Set(jobs.map(j => j.type))].sort();
+
+  const userList = document.getElementById('userList');
+  const typeList = document.getElementById('typeList');
+
+  userList.innerHTML = users.map(u => `<option value='${u}' selected>${u}</option>`).join('');
+  typeList.innerHTML = types.map(t => `<option value='${t}' selected>${t}</option>`).join('');
+
+  selectedUsers = [...users];
+  selectedTypes = [...types];
+
+  userList.addEventListener('change', handleUserFilterChange);
+  typeList.addEventListener('change', handleTypeFilterChange);
+
+  document.getElementById('selectAllUsers').onclick = () => toggleAllUsers();
+  document.getElementById('selectAllTypes').onclick = () => toggleAllTypes();
+  document.getElementById('filterDate').addEventListener('change', renderAll);
+}
+
+// Dynamic cross-filter: when users change, update available types
+function handleUserFilterChange() {
+  const userList = document.getElementById('userList');
+  selectedUsers = Array.from(userList.selectedOptions).map(o => o.value);
+
+  // Find types available for selected users
+  const availableTypes = [...new Set(
+    jobs
+      .filter(j => selectedUsers.length === 0 || selectedUsers.includes(j.user))
+      .map(j => j.type)
+  )].sort();
+
+  // Update type list while preserving selections
+  updateTypeList(availableTypes);
   renderAll();
 }
 
-function populateSidebar(){
-  const users=[...new Set(jobs.map(j=>j.user))].sort();
-  const types=[...new Set(jobs.map(j=>j.type))].sort();
-  const userList=document.getElementById('userList');
-  const typeList=document.getElementById('typeList');
-  userList.innerHTML=users.map(u=>`<label class='checkbox-item'><input type='checkbox' value='${u}' checked> ${u}</label>`).join('');
-  typeList.innerHTML=types.map(t=>`<label class='checkbox-item'><input type='checkbox' value='${t}' checked> ${t}</label>`).join('');
-  selectedUsers=[...users];
-  selectedTypes=[...types];
-  userList.querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{selectedUsers=getChecked(userList);renderAll();}));
-  typeList.querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{selectedTypes=getChecked(typeList);renderAll();}));
-  document.getElementById('selectAllUsers').onclick=()=>toggleAll(userList,selectedUsers,'user');
-  document.getElementById('selectAllTypes').onclick=()=>toggleAll(typeList,selectedTypes,'type');
-  document.getElementById('filterDate').addEventListener('change',renderAll);
-}
-function getChecked(list){return [...list.querySelectorAll("input:checked")].map(i=>i.value);}
-function toggleAll(list,arr,kind){
-  const allInputs=list.querySelectorAll("input");
-  const allSelected=arr.length===allInputs.length;
-  allInputs.forEach(i=>i.checked=!allSelected);
-  if(kind==='user')selectedUsers=getChecked(list);
-  if(kind==='type')selectedTypes=getChecked(list);
+// Dynamic cross-filter: when types change, update available users
+function handleTypeFilterChange() {
+  const typeList = document.getElementById('typeList');
+  selectedTypes = Array.from(typeList.selectedOptions).map(o => o.value);
+
+  // Find users available for selected types
+  const availableUsers = [...new Set(
+    jobs
+      .filter(j => selectedTypes.length === 0 || selectedTypes.includes(j.type))
+      .map(j => j.user)
+  )].sort();
+
+  // Update user list while preserving selections
+  updateUserList(availableUsers);
   renderAll();
 }
 
-function filtered(){
-  const date=document.getElementById('filterDate').value;
-  return jobs.filter(j=>{
-    const d=(j.end||j.created_at||'').substring(0,10);
-    return selectedUsers.includes(j.user)&&selectedTypes.includes(j.type)&&(!date||d===date);
+function updateUserList(availableUsers) {
+  const userList = document.getElementById('userList');
+  const allUsers = [...new Set(jobs.map(j => j.user))].sort();
+
+  userList.innerHTML = allUsers.map(u => {
+    const isAvailable = availableUsers.includes(u);
+    const isSelected = selectedUsers.includes(u);
+    return `<option value='${u}' ${isSelected ? 'selected' : ''} ${!isAvailable ? 'disabled' : ''}>${u}${!isAvailable ? ' (no data)' : ''}</option>`;
+  }).join('');
+}
+
+function updateTypeList(availableTypes) {
+  const typeList = document.getElementById('typeList');
+  const allTypes = [...new Set(jobs.map(j => j.type))].sort();
+
+  typeList.innerHTML = allTypes.map(t => {
+    const isAvailable = availableTypes.includes(t);
+    const isSelected = selectedTypes.includes(t);
+    return `<option value='${t}' ${isSelected ? 'selected' : ''} ${!isAvailable ? 'disabled' : ''}>${t}${!isAvailable ? ' (no data)' : ''}</option>`;
+  }).join('');
+}
+
+function toggleAllUsers() {
+  const userList = document.getElementById('userList');
+  const options = Array.from(userList.options).filter(o => !o.disabled);
+  const allSelected = options.every(o => o.selected);
+
+  options.forEach(o => o.selected = !allSelected);
+  handleUserFilterChange();
+}
+
+function toggleAllTypes() {
+  const typeList = document.getElementById('typeList');
+  const options = Array.from(typeList.options).filter(o => !o.disabled);
+  const allSelected = options.every(o => o.selected);
+
+  options.forEach(o => o.selected = !allSelected);
+  handleTypeFilterChange();
+}
+
+function clearAllFilters() {
+  document.getElementById('filterDate').value = '';
+  document.querySelectorAll('.multi-select option').forEach(o => o.selected = true);
+  selectedUsers = [...new Set(jobs.map(j => j.user))];
+  selectedTypes = [...new Set(jobs.map(j => j.type))];
+  renderAll();
+}
+
+function filtered() {
+  const date = document.getElementById('filterDate').value;
+  return jobs.filter(j => {
+    const d = (j.end || j.created_at || '').substring(0, 10);
+    const userMatch = selectedUsers.length === 0 || selectedUsers.includes(j.user);
+    const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(j.type);
+    const dateMatch = !date || d === date;
+    return userMatch && typeMatch && dateMatch;
   });
 }
 
-function renderAll(){
-  const f=filtered();
-  const completed=f.filter(j=>j.status==='completed');
-  const byType={},byUser={},byDate={},counts={pending:0,queued:0,running:0,completed:0,rejected:0,error:0,scheduled:0};
-  f.forEach(j=>counts[j.status]=(counts[j.status]||0)+1);
-  completed.forEach(j=>{
-    byType[j.type]=(byType[j.type]||0)+1;
-    byUser[j.user]=(byUser[j.user]||0)+1;
-    const d=(j.end||'').substring(0,10); if(d)byDate[d]=(byDate[d]||0)+1;
+function renderAll() {
+  const f = filtered();
+  const completed = f.filter(j => j.status === 'completed');
+  const byType = {}, byUser = {}, byDate = {};
+  const counts = { pending: 0, queued: 0, running: 0, completed: 0, rejected: 0, error: 0, scheduled: 0 };
+
+  f.forEach(j => counts[j.status] = (counts[j.status] || 0) + 1);
+  completed.forEach(j => {
+    byType[j.type] = (byType[j.type] || 0) + 1;
+    byUser[j.user] = (byUser[j.user] || 0) + 1;
+    const d = (j.end || '').substring(0, 10);
+    if (d) byDate[d] = (byDate[d] || 0) + 1;
   });
+
   renderBar(counts);
   renderDonut(byType);
   renderPie(byUser);
   renderTime(byDate);
 }
-function renderBar(c){
-  const l=Object.keys(c).map(k=>k.toUpperCase()),v=Object.values(c);
-  const col=['#ffcf66','#00bfff','#00e0ff','#7ef3b8','#ffb7a6','#ff6b6b','#b97aff'];
-  if(barChart){barChart.data.labels=l;barChart.data.datasets[0].data=v;barChart.update(slowAnim);}
-  else barChart=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:l,datasets:[{data:v,backgroundColor:col,borderRadius:6}]},options:{animation:slowAnim,plugins:{legend:{display:false},datalabels:{color:'#000',anchor:'end',align:'start',formatter:v=>v>0?v:''}},scales:{x:{ticks:{color:'#ccc'},grid:{display:false}},y:{ticks:{color:'#ccc'},beginAtZero:true}}},plugins:[ChartDataLabels]});}
-function renderDonut(o){const l=Object.keys(o),v=Object.values(o),c=genColors(l.length);if(donutChart){donutChart.data.labels=l;donutChart.data.datasets[0].data=v;donutChart.data.datasets[0].backgroundColor=c;donutChart.update(slowAnim);}else donutChart=new Chart(document.getElementById('donutChart'),{type:'doughnut',data:{labels:l,datasets:[{data:v,backgroundColor:c}]},options:{animation:slowAnim,plugins:{legend:{labels:{color:'#ccc'}},datalabels:{display:false}}}});}
-function renderPie(o){const l=Object.keys(o),v=Object.values(o),c=genColors(l.length,true);if(pieChart){pieChart.data.labels=l;pieChart.data.datasets[0].data=v;pieChart.data.datasets[0].backgroundColor=c;pieChart.update(slowAnim);}else pieChart=new Chart(document.getElementById('pieChart'),{type:'pie',data:{labels:l,datasets:[{data:v,backgroundColor:c}]},options:{animation:slowAnim,plugins:{legend:{labels:{color:'#ccc'}},datalabels:{display:false}}}});}
+
+function getThemedColors() {
+  const isDark = currentTheme === 'dark';
+  return {
+    text: isDark ? '#ECECEC' : '#0D0D0D',
+    textMuted: isDark ? '#C5C5D2' : '#6E6E80',
+    grid: isDark ? '#565869' : '#E5E5E5',
+    accent: isDark ? '#19C37D' : '#10A37F'
+  };
+}
+
+function renderBar(c) {
+  const colors = getThemedColors();
+  const l = Object.keys(c).map(k => k.toUpperCase());
+  const v = Object.values(c);
+  const col = ['#ffcf66', '#00bfff', '#00e0ff', '#7ef3b8', '#ffb7a6', '#ff6b6b', '#b97aff'];
+
+  if (barChart) {
+    barChart.data.labels = l;
+    barChart.data.datasets[0].data = v;
+    barChart.options.scales.x.ticks.color = colors.text;
+    barChart.options.scales.y.ticks.color = colors.text;
+    barChart.options.plugins.legend.labels.color = colors.text;
+    barChart.update(smoothAnim);
+  } else {
+    barChart = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: l,
+        datasets: [{
+          data: v,
+          backgroundColor: col,
+          borderRadius: 8,
+          borderWidth: 0
+        }]
+      },
+      options: {
+        animation: smoothAnim,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            color: '#000',
+            anchor: 'end',
+            align: 'start',
+            font: { weight: 'bold' },
+            formatter: v => v > 0 ? v : ''
+          }
+        },
+        scales: {
+          x: { ticks: { color: colors.text }, grid: { display: false } },
+          y: { ticks: { color: colors.text }, beginAtZero: true, grid: { color: colors.grid } }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  }
+}
+
+function renderDonut(o) {
+  const colors = getThemedColors();
+  const l = Object.keys(o);
+  const v = Object.values(o);
+  const c = genColors(l.length);
+
+  if (donutChart) {
+    donutChart.data.labels = l;
+    donutChart.data.datasets[0].data = v;
+    donutChart.data.datasets[0].backgroundColor = c;
+    donutChart.options.plugins.legend.labels.color = colors.text;
+    donutChart.update(smoothAnim);
+  } else {
+    donutChart = new Chart(document.getElementById('donutChart'), {
+      type: 'doughnut',
+      data: {
+        labels: l,
+        datasets: [{
+          data: v,
+          backgroundColor: c,
+          borderWidth: 2,
+          borderColor: currentTheme === 'dark' ? '#2F2F2F' : '#FFFFFF'
+        }]
+      },
+      options: {
+        animation: smoothAnim,
+        plugins: {
+          legend: { labels: { color: colors.text, padding: 12 } },
+          datalabels: { display: false }
+        }
+      }
+    });
+  }
+}
+
+function renderPie(o) {
+  const colors = getThemedColors();
+  const l = Object.keys(o);
+  const v = Object.values(o);
+  const c = genColors(l.length, true);
+
+  if (pieChart) {
+    pieChart.data.labels = l;
+    pieChart.data.datasets[0].data = v;
+    pieChart.data.datasets[0].backgroundColor = c;
+    pieChart.options.plugins.legend.labels.color = colors.text;
+    pieChart.update(smoothAnim);
+  } else {
+    pieChart = new Chart(document.getElementById('pieChart'), {
+      type: 'pie',
+      data: {
+        labels: l,
+        datasets: [{
+          data: v,
+          backgroundColor: c,
+          borderWidth: 2,
+          borderColor: currentTheme === 'dark' ? '#2F2F2F' : '#FFFFFF'
+        }]
+      },
+      options: {
+        animation: smoothAnim,
+        plugins: {
+          legend: { labels: { color: colors.text, padding: 12 } },
+          datalabels: { display: false }
+        }
+      }
+    });
+  }
+}
 
 function renderTime(o) {
+  const colors = getThemedColors();
   const labels = Object.keys(o).sort();
   const values = labels.map(k => o[k]);
 
-  const newData = {
-    labels,
-    datasets: [{
-      label: 'Completions',
-      data: values,
-      borderColor: '#00e0ff',
-      backgroundColor: 'rgba(0,224,255,0.15)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 4,
-      pointHoverRadius: 6
-    }]
-  };
-
   const options = {
-    animation: {
-      duration: 2500, // smooth but fast
-      easing: 'easeInOutCubic', // nice curve
-    },
+    animation: smoothAnim,
     interaction: {
       mode: 'index',
       intersect: false
@@ -335,29 +763,56 @@ function renderTime(o) {
       tooltip: { mode: 'index', intersect: false }
     },
     scales: {
-      x: { ticks: { color: '#ccc' } },
-      y: { ticks: { color: '#ccc' }, beginAtZero: true }
+      x: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+      y: { ticks: { color: colors.text }, beginAtZero: true, grid: { color: colors.grid } }
     }
   };
 
   if (timeChart) {
-    // 🔄 Instead of reinitializing, update dataset smoothly
     timeChart.data.labels = labels;
     timeChart.data.datasets[0].data = values;
-
-    // ✅ Keeps previous animation state — animates between old & new
-    timeChart.update();
+    timeChart.data.datasets[0].borderColor = colors.accent;
+    timeChart.data.datasets[0].backgroundColor = colors.accent + '20';
+    timeChart.options.scales.x.ticks.color = colors.text;
+    timeChart.options.scales.y.ticks.color = colors.text;
+    timeChart.options.scales.x.grid.color = colors.grid;
+    timeChart.options.scales.y.grid.color = colors.grid;
+    timeChart.update(smoothAnim);
   } else {
     timeChart = new Chart(document.getElementById('timeChart'), {
       type: 'line',
-      data: newData,
+      data: {
+        labels,
+        datasets: [{
+          label: 'Completions',
+          data: values,
+          borderColor: colors.accent,
+          backgroundColor: colors.accent + '20',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: colors.accent,
+          borderWidth: 3
+        }]
+      },
       options
     });
   }
 }
 
+function genColors(n) {
+  const b = ['#00e0ff', '#7ef3b8', '#ffb347', '#b97aff', '#ff6b6b', '#ffcf66', '#00bfff'];
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(b[i % b.length]);
+  return out;
+}
 
-function genColors(n){const b=['#00e0ff','#7ef3b8','#ffb347','#b97aff','#ff6b6b','#ffcf66','#00bfff'];const out=[];for(let i=0;i<n;i++)out.push(b[i%b.length]);return out;}
+// Auto-refresh every 30 seconds
+setInterval(() => {
+  loadJobs();
+}, 30000);
+
 loadJobs();
 </script>
 </body>

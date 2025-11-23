@@ -856,13 +856,18 @@ if (!arr.length) {
   const accent = accentForType(job.type);
   const card=document.createElement('div');
   card.className='running-card'; card.style.borderTop=`4px solid ${accent}`;
+
+  let killBtn = '';
+  if(isApprover) {
+    killBtn = `<button class="btn" style="background:#ff6b6b;color:#fff;margin-top:8px;" onclick="killJob('${job.id}')">🛑 Kill Job</button>`;
+  }
+
   card.innerHTML=`<span class="badge badge-running">RUNNING <div class="spinner" style="margin-left:8px"></div></span>
     <strong>${escapeHtml(mapTitle(job.type))}</strong><div class="meta">${escapeHtml(job.items||'')}</div>
     <div class="meta">👤 ${escapeHtml(job.user)}<br>🕒 ${escapeHtml(job.start || job.approved_at || job.created_at)}
-
 </div>
     <div class="progress-track"><div id="prog_${job.id}" class="progress-fill" style="width:${job.progress}%"></div></div>
-    <div id="logs_${job.id}" class="log-area"></div>`;
+    <div id="logs_${job.id}" class="log-area"></div>${killBtn}`;
   el.appendChild(card);
   startLogStream(job.id);
 }
@@ -894,11 +899,22 @@ function renderCompleted(){
     const card=document.createElement('div');
     card.className='completed-card'; card.style.borderLeft=`4px solid ${accentForType(j.type)}`;
     let badgeText='COMPLETED', cls='badge-completed', btn='';
-    if(j.status==='rejected'){ badgeText='REJECTED'; cls='badge-rejected'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>`; }
-    else if(j.status==='error'){ badgeText='ERROR'; cls='badge-error'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>`; }
+    if(j.status==='rejected'){
+      badgeText='REJECTED';
+      cls='badge-rejected';
+      btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>
+           <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+    }
+    else if(j.status==='error'){
+      badgeText='ERROR';
+      cls='badge-error';
+      btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>
+           <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+    }
 
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span class="badge ${cls}">${badgeText}</span>${btn}
+    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+        <span class="badge ${cls}">${badgeText}</span>
+        <div style="display:flex;gap:4px;">${btn}</div>
       </div>
       <strong>${escapeHtml(mapTitle(j.type))}</strong>
       <div class="meta">📦 ${escapeHtml(j.items||'')}</div>
@@ -1080,6 +1096,47 @@ box.innerHTML = `
 }
 
 function closeShowReason(){document.getElementById('showReasonModal').style.display='none';}
+
+/* -------------------------
+   Kill and Re-submit Job
+   ------------------------- */
+async function killJob(id) {
+  if (!confirm('Are you sure you want to kill this running job?')) return;
+
+  try {
+    const r = await fetch('/kill/' + id, { method: 'POST' });
+    const j = await r.json();
+
+    if (r.ok && j.ok) {
+      alert('Job killed successfully');
+      fetchJobs();
+    } else {
+      alert(j.msg || 'Failed to kill job');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Failed to kill job');
+  }
+}
+
+async function resubmitJob(id) {
+  if (!confirm('Re-submit this job as a new pending request?')) return;
+
+  try {
+    const r = await fetch('/resubmit/' + id, { method: 'POST' });
+    const j = await r.json();
+
+    if (r.ok && j.ok) {
+      alert('Job re-submitted successfully! New job ID: ' + j.new_id);
+      fetchJobs();
+    } else {
+      alert(j.msg || 'Failed to re-submit job');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Failed to re-submit job');
+  }
+}
 
 /* -------------------------
    Logs via SSE
@@ -1522,6 +1579,12 @@ if (!arr.length) {
   const card = document.createElement('div');
   card.className = 'running-card fade-in';
   card.style.borderTop = `4px solid ${accent}`;
+
+  let killBtn = '';
+  if(isApprover) {
+    killBtn = `<button class="btn" style="background:#ff6b6b;color:#fff;margin-top:8px;" onclick="killJob('${job.id}')">🛑 Kill Job</button>`;
+  }
+
   card.innerHTML = `
     <span class="badge badge-running">RUNNING <div class="spinner" style="margin-left:8px"></div></span>
     <strong>${escapeHtml(mapTitle(job.type))}</strong>
@@ -1529,7 +1592,7 @@ if (!arr.length) {
     <div class="meta">👤 ${escapeHtml(job.user)}<br>🕒 ${escapeHtml(job.start || job.approved_at || job.created_at)}
 </div>
     <div class="progress-track"><div id="prog_${job.id}" class="progress-fill" style="width:${job.progress}%"></div></div>
-    <div id="logs_${job.id}" class="log-area"></div>`;
+    <div id="logs_${job.id}" class="log-area"></div>${killBtn}`;
   el.appendChild(card);
   startLogStream(job.id);
 };
@@ -1571,12 +1634,23 @@ renderCompleted = function() {
       if (newCardIds.includes(j.id)) card.classList.add('fade-in');
       card.style.borderLeft = `4px solid ${accentForType(j.type)}`;
       let badgeText = 'COMPLETED', cls = 'badge-completed', btn = '';
-      if (j.status === 'rejected'){ badgeText='REJECTED'; cls='badge-rejected'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>`; }
-      else if (j.status === 'error'){ badgeText='ERROR'; cls='badge-error'; btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>`; }
+      if (j.status === 'rejected'){
+        badgeText='REJECTED';
+        cls='badge-rejected';
+        btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">Show Reason</button>
+             <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+      }
+      else if (j.status === 'error'){
+        badgeText='ERROR';
+        cls='badge-error';
+        btn=`<button class="btn" style="padding:4px 10px;font-size:0.8rem;" onclick="viewReason('${j.id}')">View Error Logs</button>
+             <button class="btn" style="padding:4px 10px;font-size:0.8rem;background:#00e0ff;color:#000;margin-left:4px;" onclick="resubmitJob('${j.id}')">🔄 Re-submit</button>`;
+      }
 
       card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span class="badge ${cls}">${badgeText}</span>${btn}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+          <span class="badge ${cls}">${badgeText}</span>
+          <div style="display:flex;gap:4px;">${btn}</div>
         </div>
         <strong>${escapeHtml(mapTitle(j.type))}</strong>
         <div class="meta">📦 ${escapeHtml(j.items||'')}</div>
